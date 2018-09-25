@@ -33,6 +33,12 @@
     <ClInclude Include="RendererD3D12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RenderNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexTypes.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -45,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RendererD3D12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

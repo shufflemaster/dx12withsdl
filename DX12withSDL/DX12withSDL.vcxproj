@@ -172,7 +172,9 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="PerfCounter.h" />
     <ClInclude Include="RendererD3D12.h" />
+    <ClInclude Include="RenderNode.h" />
     <ClInclude Include="textureloader.h" />
+    <ClInclude Include="VertexTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -184,6 +186,7 @@
     </ClCompile>
     <ClCompile Include="LogUtils.cpp" />
     <ClCompile Include="RendererD3D12.cpp" />
+    <ClCompile Include="RenderNode.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

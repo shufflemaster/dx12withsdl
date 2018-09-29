@@ -162,22 +162,7 @@ static std::wstring StringToWString(const std::string& str)
 
 namespace VertexTypes
 {
-	struct P3F_C4F
-	{
-		float pos[3];
-		float color[4];
 
-		static const D3D12_INPUT_LAYOUT_DESC& GetInputLayoutDesc()
-		{
-			static D3D12_INPUT_ELEMENT_DESC elements[] =
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-			};
-			static D3D12_INPUT_LAYOUT_DESC desc = { elements, sizeof(elements) / sizeof(elements[0]) };
-			return desc;
-		}
-	};
 
 	struct P3F_T2F
 	{
@@ -276,7 +261,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3DBlob> m_ErrorBlob;
 };
 
-class Shader
+class OldShader
 {
 public:
 	void Load(const char* filename, const char* entryPoint, const char* target)

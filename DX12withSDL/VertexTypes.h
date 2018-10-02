@@ -6,6 +6,7 @@
 
 namespace GAL
 {
+#pragma pack(push, 1)
     struct P3F_C4F
     {
         float pos[3]; //x, y, z
@@ -22,5 +23,6 @@ namespace GAL
             return desc;
         }
     };
+#pragma pack(pop)
 
 };

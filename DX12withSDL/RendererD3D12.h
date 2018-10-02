@@ -16,12 +16,26 @@ namespace GAL
         HRESULT ResizeSwapChain();
 
         ID3D12Device* GetDevice() { return mDevice.Get();  }
+        ID3D12GraphicsCommandList* GetCommandList() { return mCommandList.Get(); }
+
+        //FIXME: This is more related with the Technique/Effect.
+        void fillPSOSampleDescription(D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDescription);
 
     private:
         RendererD3D12();
         static  RendererD3D12 s_renderer;
 
         static const UINT kBackBufferCount = 3; //define number of backbuffers to use
+
+        //Rule of thumbs
+        /*
+        Render Targets : Number of frame buffers
+        Command Allocators : Number of frame buffers * number of threads
+        Command Lists : Number of threads.  NOTE: Command Allocators can only have one command list recording at any time
+        Fences : Number of threads
+        Fence Values : Number of threads
+        Fence Events : Number of threads
+        */
 
         Microsoft::WRL::ComPtr<ID3D12Device> mDevice;					//d3d12 device
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mCommandListAllocator; //d3d12 command list allocator

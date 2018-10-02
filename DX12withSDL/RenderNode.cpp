@@ -63,8 +63,7 @@ namespace GAL
             return false;
         }
 
-        const D3D12_INPUT_LAYOUT_DESC& inputLayoutDesc = P3F_C4F::GetInputLayoutDesc();
-
+        //FIXME: PSO should not be created/owned by render nodes.
         // create a pipeline state object (PSO)
 
         // In a real application, you will have many pso's. for each different shader
@@ -82,19 +81,82 @@ namespace GAL
         psoDesc.VS = m_vertexShader->GetCompiledByteCode(); // structure describing where to find the vertex shader bytecode and how large it is
         psoDesc.PS = m_pixelShader->GetCompiledByteCode(); // same as VS but for pixel shader
         psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // type of topology we are drawing
-        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the render target
-        psoDesc.SampleDesc = sampleDesc; // must be the same sample description as the swapchain and depth/stencil buffer
-        psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
         psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); // a default rasterizer state.
         psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT); // a default blent state.
-        psoDesc.NumRenderTargets = 1; // we are only binding one render target
+        RendererD3D12::GetRenderer().fillPSOSampleDescription(psoDesc);
+
 
         // create the pso
-        hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject));
+        hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateObject.Get()));
         if (FAILED(hr))
         {
+            ODERROR("Failed to create PSO: result=0x%08X", hr);
             return false;
         }
+
+        //FIXME: Move this into some kind of mesh object for efficient instancing
+        //Create the vertex buffer
+        // create default heap.
+        // default heap is memory on the GPU. Only the GPU has access to this memory
+        // To get data into this heap, we will have to upload the data using
+        // an upload heap
+        UINT vBufferSize = sizeof(*vertices) * numVertices;
+        device->CreateCommittedResource(
+                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
+                D3D12_HEAP_FLAG_NONE, // no flags
+                &CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
+                D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
+                                                // from the upload heap to this heap
+                nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
+                IID_PPV_ARGS(&m_vertexBuffer.Get()));
+        // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
+        m_vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
+
+        // create upload heap
+        // upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
+        // We will upload the vertex buffer using this heap to the default heap
+        ID3D12Resource* vBufferUploadHeap;
+        device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
+            D3D12_HEAP_FLAG_NONE, // no flags
+            &CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
+            D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
+            nullptr,
+            IID_PPV_ARGS(&vBufferUploadHeap));
+        vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
+
+        // store vertex buffer in upload heap
+        D3D12_SUBRESOURCE_DATA vertexData = {};
+        vertexData.pData = reinterpret_cast<BYTE*>(vertices); // pointer to our vertex array
+        vertexData.RowPitch = vBufferSize; // size of all our triangle vertex data
+        vertexData.SlicePitch = vBufferSize; // also the size of our triangle vertex data
+
+        // we are now creating a command with the command list to copy the data from
+        // the upload heap to the default heap
+        UpdateSubresources(commandList, vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
+
+        // transition the vertex buffer data from copy destination state to vertex buffer state
+        commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+        // Now we execute the command list to upload the initial assets (triangle data)
+        commandList->Close();
+        ID3D12CommandList* ppCommandLists[] = { commandList };
+        commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+        // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
+        fenceValue[frameIndex]++;
+        hr = commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
+        if (FAILED(hr))
+        {
+            Running = false;
+        }
+
+        // create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
+        vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+        vertexBufferView.StrideInBytes = sizeof(Vertex);
+        vertexBufferView.SizeInBytes = vBufferSize;
+
+
 
 
         return true;

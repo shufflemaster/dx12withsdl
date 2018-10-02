@@ -3,6 +3,9 @@
 
 namespace GAL
 {
+#define MY_RENDER_TARGET_FORMAT (DXGI_FORMAT_R8G8B8A8_UNORM)
+#define MY_SAMPLE_DESC_COUNT (1)
+#define MY_SAMPLE_DESC_QUALITY (0)
 
     RendererD3D12::RendererD3D12()
     {
@@ -40,10 +43,11 @@ namespace GAL
         DXGI_SWAP_CHAIN_DESC swapChainDesc;
         ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
         swapChainDesc.BufferCount = g_bbCount;
-        swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        swapChainDesc.BufferDesc.Format = MY_RENDER_TARGET_FORMAT;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.OutputWindow = hWnd;
-        swapChainDesc.SampleDesc.Count = 1;
+        swapChainDesc.SampleDesc.Count = MY_SAMPLE_DESC_COUNT;
+        swapChainDesc.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
         swapChainDesc.Windowed = TRUE;
         swapChainDesc.Flags = 0; //DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
         //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -252,6 +256,15 @@ namespace GAL
         // apps should use fences to determine GPU execution progress.
         hr = mCommandListAllocator->Reset();
         hr = mCommandList->Reset(mCommandListAllocator.Get(), NULL);
+    }
+
+    void RendererD3D12::fillPSOSampleDescription(D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDescription)
+    {
+        psoDescription.RTVFormats[0] = MY_RENDER_TARGET_FORMAT; // format of the render target
+        psoDescription.NumRenderTargets = 1; // we only have one format in RTVFormats[8]
+        psoDescription.SampleDesc.Count = MY_SAMPLE_DESC_COUNT; // must be the same sample description as the swapchain and depth/stencil buffer
+        psoDescription.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
+        psoDescription.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
     }
 
 }; //namespace GAL

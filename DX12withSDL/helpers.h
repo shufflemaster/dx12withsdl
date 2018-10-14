@@ -347,26 +347,6 @@ struct PipelineStateObjectDescription : D3D12_GRAPHICS_PIPELINE_STATE_DESC
 	}
 };
 
-class PipelineStateObject
-{
-public:
-	void Create(
-		ID3D12Device* device,
-		const PipelineStateObjectDescription& desc)
-	{
-		ThrowIfFailed(
-			device->CreateGraphicsPipelineState(
-				&desc, 
-				__uuidof(ID3D12PipelineState), 
-				(void**)m_PSO.GetAddressOf())
-			);
-	}
-
-	auto Get() const { return m_PSO.Get(); }
-
-private:
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_PSO;
-};
 
 class CommittedResource
 {

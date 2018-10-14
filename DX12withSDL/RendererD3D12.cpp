@@ -18,31 +18,133 @@ namespace GAL
 
     bool RendererD3D12::Init(HWND hWnd)
     {
+        bool retVal = false;
+
+        //get the client window area size.
+        RECT clientSize;;
+        GetClientRect(hWnd, &clientSize);
+        m_windowWidth = clientSize.right;
+        m_windowHeight = clientSize.bottom;
+
+        do {
+            if (!CreateDeviceAndSwapChain())
+            {
+                break;
+            }
+            if (!CreateAllocatorsAndCommandLists())
+            {
+                break;
+            }
+            DefineViewportScissor();
+            if (!CreateRootSignature())
+            {
+                break;
+            }
+            if (!CreatePipelineStateObject())
+            {
+                break;
+            }
+            retVal = true;
+        } while (0);
+
+        return retVal;
+    }
+
+    bool RendererD3D12::SetupRenderTargets()
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+        heapDesc.NumDescriptors = kBackBufferCount;
+        heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+        m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_renderTargetDescriptorHeap));
+
+        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle{
+            m_renderTargetDescriptorHeap->GetCPUDescriptorHandleForHeapStart() };
+
+        D3D12_RENDER_TARGET_VIEW_DESC viewDesc;
+        ZeroMemory(&viewDesc, sizeof(viewDesc));
+        viewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+        for (int i = 0; i < kBackBufferCount; ++i) {
+
+            m_device->CreateRenderTargetView(m_renderTargets[i].Get(), &viewDesc,
+                rtvHandle);
+            rtvHandle.Offset(m_renderTargetViewDescriptorSize);
+        }
+
+        return true;
+    }
+
+
+    bool RendererD3D12::SetupSwapChain()
+    {
+        // This is the first fence value we'll set, has to be != our initial value
+        // below so we can wait on the first fence correctly
+        m_currentFenceValue = 1;
+
+        // Create fences for each frame so we can protect resources and wait for
+        // any given frame
+        for (int i = 0; i < kBackBufferCount; ++i) {
+            m_frameFenceEvents[i] = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+            m_fenceValues[i] = 0;
+            m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
+                IID_PPV_ARGS(&m_frameFences[i]));
+        }
+
+        for (int i = 0; i < kBackBufferCount; ++i) {
+            m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderTargets[i]));
+            m_renderTargets[i]->SetName(L"mRenderTarget" + i);  //set debug name 
+        }
+
+        return SetupRenderTargets();
+    }
+
+    bool RendererD3D12::CreateDeviceAndSwapChain()
+    {
+        // Enable the debug layers when in debug mode
+    // If this fails, install the Graphics Tools for Windows. On Windows 10,
+    // open settings, Apps, Apps & Features, Optional features, Add Feature,
+    // and add the graphics tools
+#ifdef _DEBUG
+        ComPtr<ID3D12Debug> debugController;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
+
+        if (debugController) {
+            debugController->EnableDebugLayer();
+        }
+#endif
+
         //This example shows calling D3D12CreateDevice to create the device.
         //GAL: Minimum supported d3d version is 11. 
         HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0,
-            __uuidof(ID3D12Device), (void**)&mDevice);
+            __uuidof(ID3D12Device), (void**)&mDevice.Get());
 
         D3D12_FEATURE_DATA_D3D12_OPTIONS options;
         if (FAILED(mDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, reinterpret_cast<void*>(&options),
             sizeof(options))))
         {
-            throw;
+            ODERROR("The device doesn't support D3d12 options");
+            return false;
         }
 
-        //Create the command allocator and queue objects.Then, obtain command lists from the command allocator and submit them to the command queue.
-        //This example shows calling ID3D12Device::CreateCommandAllocator and ID3D12Device::GetDefaultCommandQueue. Latter doesn't exist tho??
-        hr = mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), (void**)&mCommandListAllocator);
+        //Create the Command Queue used for Rendering. There can be Command Queue for Computing and for Copying.
+        //This one is for rendering.
         D3D12_COMMAND_QUEUE_DESC commandQueueDesc = {};
+        commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        hr = mDevice->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue), (void**)&mCommandQueue);
+        hr = mDevice->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&&mCommandQueue));
+        if (FAILED(hr)) {
+            ODERROR("Command queue creation failed.");
+            return false;
+        }
 
         //Create the swap chain similarly to how it was done in Direct3D 11.
 
         // Create the swap chain descriptor.
         DXGI_SWAP_CHAIN_DESC swapChainDesc;
         ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
-        swapChainDesc.BufferCount = g_bbCount;
+        swapChainDesc.BufferCount = RendererD3D12::kBackBufferCount;
         swapChainDesc.BufferDesc.Format = MY_RENDER_TARGET_FORMAT;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.OutputWindow = hWnd;
@@ -50,13 +152,19 @@ namespace GAL
         swapChainDesc.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
         swapChainDesc.Windowed = TRUE;
         swapChainDesc.Flags = 0; //DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-        //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        //Documentation recommends flip_sequential for D3D12, see - https://msdn.microsoft.com/en-us/library/windows/desktop/dn903945
+        //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 
 
         // Get the DXGI factory used to create the swap chain.
-        IDXGIFactory2 *dxgiFactory = nullptr;
-        hr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory2), (void**)&dxgiFactory);
+        ComPtr<IDXGIFactory4> dxgiFactory = nullptr;
+        hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+        if (FAILED(hr))
+        {
+            ODERROR("DXGI factory creation failed.");
+            return false;
+        }
 
 
         // Create the swap chain using the command queue, NOT using the device.  Thanks Killeak!
@@ -65,99 +173,126 @@ namespace GAL
         //increase max frame latency when required
         if (swapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
         {
-            mSwapChain->SetMaximumFrameLatency(g_bbCount);
+            mSwapChain->SetMaximumFrameLatency(RendererD3D12::kBackBufferCount);
         }
 
-        dxgiFactory->Release();
+        m_renderTargetViewDescriptorSize =
+            device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-        //Create the RTV descriptor heap with g_bbCount entries (front and back buffer since swapchain resource rotation is no longer automatic).
-        //Documentation recommends flip_sequential for D3D12, see - https://msdn.microsoft.com/en-us/library/windows/desktop/dn903945
-        mRTVDescriptorHeap.Create(mDevice.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, g_bbCount);
-
-        //RTV descriptor and viewport/scissor initialization moved to seperate function
-        hr = ResizeSwapChain();
-
-
-        //create worldMatrix buffer resource on it's own heap and leave mapped, the end-of-frame fence prevents
-        //it being written while the GPU is still reading it.
-        UINT cbSize = sizeof(DirectX::XMMATRIX);
-        hr = mWorldMatrix.Create(mDevice.Get(), cbSize, D3D12_HEAP_TYPE_UPLOAD);
-
-        //create viewMatrix buffer resource on it's own heap and leave mapped
-        hr = mViewMatrix.Create(mDevice.Get(), cbSize, D3D12_HEAP_TYPE_UPLOAD);
-
-        //create projMatrix buffer resource on it's own heap and leave mapped
-        hr = mProjMatrix.Create(mDevice.Get(), cbSize, D3D12_HEAP_TYPE_UPLOAD);
-
-        //create the descriptor heap for the view and proj matrix CB views (and now a texture2d SRV view also)
-        mCBDescriptorHeap.Create(mDevice.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 3, true);
-
-        D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc;
-        //create the view matrix constant buffer view descriptor
-        cbDesc.BufferLocation = mViewMatrix.pBuf->GetGPUVirtualAddress();
-        cbDesc.SizeInBytes = 256;// max(cbSize, 256); //Size of 64 is invalid.  Device requires SizeInBytes be a multiple of 256. [ STATE_CREATION ERROR #645 ]
-        mDevice->CreateConstantBufferView(&cbDesc, mCBDescriptorHeap.hCPU(0));
-
-        //create the proj matrix constant buffer view descriptor
-        cbDesc.BufferLocation = mProjMatrix.pBuf->GetGPUVirtualAddress();
-        cbDesc.SizeInBytes = 256; //CB descriptor size must be multiple of 256
-        mDevice->CreateConstantBufferView(&cbDesc, mCBDescriptorHeap.hCPU(1));
+        return SetupSwapChain();
     }
 
-    HRESULT RendererD3D12::ResizeSwapChain()
+    bool RendererD3D12::CreateAllocatorsAndCommandLists()
     {
-        HRESULT hr = S_OK;
-        g_requestResize = false;
-
-        //get the client window area size.
-        RECT clientSize;
-        UINT width, height;
-        GetClientRect(g_hWnd, &clientSize);
-        width = clientSize.right;
-        height = clientSize.bottom;
-
-        //if the client size is valid (ignore minimize etc).
-        if (width > 0)
-        {
-
-            //release existing backbuffer resources pointers (use reset for ComPtr rather than release, or just assign nullptr).
-            for (UINT i = 0; i < g_bbCount; ++i)
-            {
-                mRenderTarget[i].Reset();
-            }
-
-            //resize the swapchain buffers
-            mSwapChain->ResizeBuffers(g_bbCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0); //DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
-
-            //A buffer is required to render to.This example shows how to create that buffer by using the swap chain and device.
-            //This example shows calling ID3D12Device::CreateRenderTargetView.
-            D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
-            ZeroMemory(&rtvDesc, sizeof(rtvDesc));
-            rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-
-            //loop for all backbuffer resources
-            for (UINT i = 0; i < g_bbCount; ++i)
-            {
-                hr = mSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (LPVOID*)&mRenderTarget[i]);
-                mRenderTarget[0]->SetName(L"mRenderTarget" + i);  //set debug name 
-                mDevice->CreateRenderTargetView(mRenderTarget[i].Get(), &rtvDesc, mRTVDescriptorHeap.hCPU(i));
-            }
-
-            //fill out a viewport struct
-            ZeroMemory(&mViewPort, sizeof(D3D12_VIEWPORT));
-            mViewPort.TopLeftX = 0;
-            mViewPort.TopLeftY = 0;
-            mViewPort.Width = (float)width;
-            mViewPort.Height = (float)height;
-            mViewPort.MinDepth = 0.0f;
-            mViewPort.MaxDepth = 1.0f;
-
-            mRectScissor = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+        for (int i = 0; i < kBackBufferCount; ++i) {
+            m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+                IID_PPV_ARGS(&m_commandAllocators[i]));
+            device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+                m_commandAllocators[i].Get(), nullptr,
+                IID_PPV_ARGS(&m_commandLists[i]));
+            m_commandLists[i]->Close();
         }
-
-        return hr;
+        return true;
     }
+
+   void RendererD3D12::DefineViewportScissor()
+    {
+        m_rectScissor = { 0, 0, m_windowWidth, m_windowHeight };
+
+        m_viewport = { 0.0f, 0.0f,
+            static_cast<float>(m_windowWidth),
+            static_cast<float>(m_windowHeight),
+            0.0f, 1.0f
+        };
+    }
+
+   bool RendererD3D12::CreateRootSignature()
+   {
+       //This is the most simple root signature, because there are no parameters, no matrices,
+       //no textures, etc. Only the vertices data are relevant.
+       ComPtr<ID3DBlob> rootBlob;
+       ComPtr<ID3DBlob> errorBlob;
+
+       // We don't use another descriptor heap for the sampler, instead we use a
+       // static sampler
+       CD3DX12_STATIC_SAMPLER_DESC samplers[1];
+       samplers[0].Init(0, D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT);
+
+       CD3DX12_ROOT_SIGNATURE_DESC descRootSignature;
+
+       // Create the root signature
+       descRootSignature.Init(0, nullptr,
+           1, samplers,
+           D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+           D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+           D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+           D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
+
+       D3D12SerializeRootSignature(&descRootSignature,
+           D3D_ROOT_SIGNATURE_VERSION_1, &rootBlob, &errorBlob);
+
+       m_device->CreateRootSignature(0,
+           rootBlob->GetBufferPointer(),
+           rootBlob->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
+
+       return true;
+   }
+
+   bool RendererD3D12::CreatePipelineStateObject()
+   {
+       //Create vertex and pixel shader
+       m_vertexShader = std::make_unique<Shader>("P3F_C4F_Shaders.hlsl", "VSMain", Shader::TargetType::VertexShader);
+       if (m_vertexShader->GetCompileError()) {
+           ODERROR("Failed to compile vertex shader: %s", m_vertexShader->GetCompileError());
+           return false;
+       }
+
+       m_pixelShader = std::make_unique<Shader>("P3F_C4F_Shaders.hlsl", "PSMain", Shader::TargetType::PixelShader);
+       if (m_pixelShader->GetCompileError()) {
+           ODERROR("Failed to compile pixel shader: %s", m_pixelShader->GetCompileError());
+           return false;
+       }
+
+
+       //FIXME: PSO should not be created/owned by render nodes.
+       // create a pipeline state object (PSO)
+
+       // In a real application, you will have many pso's. for each different shader
+       // or different combinations of shaders, different blend states or different rasterizer states,
+       // different topology types (point, line, triangle, patch), or a different number
+       // of render targets you will need a pso
+
+       // VS is the only required shader for a pso. You might be wondering when a case would be where
+       // you only set the VS. It's possible that you have a pso that only outputs data with the stream
+       // output, and not on a render target, which means you would not need anything after the stream
+       // output.
+       D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {}; // a structure to define a pso
+       psoDesc.InputLayout = P3F_C4F::GetInputLayoutDesc(); // the structure describing our input layout
+       psoDesc.pRootSignature = m_rootSignature.Get(); // the root signature that describes the input data this pso needs
+       psoDesc.VS = m_vertexShader->GetCompiledByteCode(); // structure describing where to find the vertex shader bytecode and how large it is
+       psoDesc.PS = m_pixelShader->GetCompiledByteCode(); // same as VS but for pixel shader
+       psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // type of topology we are drawing
+       psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); // a default rasterizer state.
+       psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT); // a default blend state.
+       psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // format of the render target
+       psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+       psoDesc.NumRenderTargets = 1; // we only have one format in RTVFormats[8]
+       psoDesc.SampleDesc.Count = MY_SAMPLE_DESC_COUNT; // must be the same sample description as the swapchain and depth/stencil buffer
+       psoDesc.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
+       psoDesc.DepthStencilState.DepthEnable = false;
+       psoDesc.DepthStencilState.StencilEnable = false;
+       psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
+
+       // create the pso
+       hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateObject.Get()));
+       if (FAILED(hr))
+       {
+           ODERROR("Failed to create PSO: result=0x%08X", hr);
+           return false;
+       }
+
+       return true;
+   }
 
     void RendererD3D12::RenderFrame()
     {
@@ -256,15 +391,6 @@ namespace GAL
         // apps should use fences to determine GPU execution progress.
         hr = mCommandListAllocator->Reset();
         hr = mCommandList->Reset(mCommandListAllocator.Get(), NULL);
-    }
-
-    void RendererD3D12::fillPSOSampleDescription(D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDescription)
-    {
-        psoDescription.RTVFormats[0] = MY_RENDER_TARGET_FORMAT; // format of the render target
-        psoDescription.NumRenderTargets = 1; // we only have one format in RTVFormats[8]
-        psoDescription.SampleDesc.Count = MY_SAMPLE_DESC_COUNT; // must be the same sample description as the swapchain and depth/stencil buffer
-        psoDescription.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
-        psoDescription.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
     }
 
 }; //namespace GAL

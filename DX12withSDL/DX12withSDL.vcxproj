@@ -167,7 +167,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="helpers.h" />
     <ClInclude Include="LogUtils.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PerfCounter.h" />

@@ -11,6 +11,32 @@ namespace GAL
     {
     }
 
+    Shader::Shader(const Shader & other)
+    {
+        if (other.m_compilationError.Get())
+        {
+            D3DCreateBlob(
+                other.m_compilationError->GetBufferSize(),
+                (ID3DBlob**)m_compilationError.GetAddressOf());
+            memcpy(m_compilationError->GetBufferPointer(), other.m_compilationError->GetBufferPointer(), other.m_compilationError->GetBufferSize());
+        }
+
+        if (other.m_compiledShader.Get())
+        {
+            D3DCreateBlob(
+                other.m_compiledShader->GetBufferSize(),
+                (ID3DBlob**)m_compiledShader.GetAddressOf());
+            memcpy(m_compiledShader->GetBufferPointer(), other.m_compiledShader->GetBufferPointer(), other.m_compiledShader->GetBufferSize());
+        }
+
+    }
+
+    Shader::Shader(Shader && other)
+    {
+        other.m_compilationError.Swap(m_compilationError);
+        other.m_compiledShader.Swap(m_compiledShader);
+    }
+
     Shader::Shader(LPCWSTR filePath, const char * entryPoint, TargetType targetType) : Shader()
     {
         const char * shaderTarget = GetTargetTypeString(targetType);

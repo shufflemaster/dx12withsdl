@@ -8,7 +8,7 @@ using namespace std;
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include "Shader.h"
-using namespace Microsoft::WRL::ComPtr;
+using Microsoft::WRL::ComPtr;
 
 namespace GAL
 {
@@ -30,5 +30,7 @@ namespace GAL
         ComPtr <ID3D12Resource> m_indexBuffer; // a default buffer in GPU memory that we will hold mesh index data.
         D3D12_INDEX_BUFFER_VIEW m_indexBufferView; // a structure containing a pointer to the index data in gpu memory
                                                    // the total size of the buffer, and the size of each element (index)
+
+        uint32_t m_numIndices;
     };
 };

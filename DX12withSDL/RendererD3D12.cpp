@@ -1,5 +1,11 @@
 #include "pch.h"
+#include "D3dx12.h"
+
+#include "LogUtils.h"
 #include "RendererD3D12.h"
+#include "RenderNode.h"
+#include "Shader.h"
+#include "VertexTypes.h"
 
 namespace GAL
 {
@@ -7,7 +13,9 @@ namespace GAL
 #define MY_SAMPLE_DESC_COUNT (1)
 #define MY_SAMPLE_DESC_QUALITY (0)
 
-    RendererD3D12::RendererD3D12()
+    RendererD3D12 RendererD3D12::s_renderer;
+
+    RendererD3D12::RendererD3D12() : m_currentBackBuffer(0)
     {
     }
 
@@ -27,7 +35,7 @@ namespace GAL
         m_windowHeight = clientSize.bottom;
 
         do {
-            if (!CreateDeviceAndSwapChain())
+            if (!CreateDeviceAndSwapChain(hWnd))
             {
                 break;
             }
@@ -81,6 +89,7 @@ namespace GAL
     {
         // This is the first fence value we'll set, has to be != our initial value
         // below so we can wait on the first fence correctly
+        m_currentBackBuffer = 0;
         m_currentFenceValue = 1;
 
         // Create fences for each frame so we can protect resources and wait for
@@ -100,7 +109,7 @@ namespace GAL
         return SetupRenderTargets();
     }
 
-    bool RendererD3D12::CreateDeviceAndSwapChain()
+    bool RendererD3D12::CreateDeviceAndSwapChain(HWND hWnd)
     {
         // Enable the debug layers when in debug mode
     // If this fails, install the Graphics Tools for Windows. On Windows 10,
@@ -118,10 +127,10 @@ namespace GAL
         //This example shows calling D3D12CreateDevice to create the device.
         //GAL: Minimum supported d3d version is 11. 
         HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0,
-            __uuidof(ID3D12Device), (void**)&mDevice.Get());
+            IID_PPV_ARGS(&m_device));
 
         D3D12_FEATURE_DATA_D3D12_OPTIONS options;
-        if (FAILED(mDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, reinterpret_cast<void*>(&options),
+        if (FAILED(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, reinterpret_cast<void*>(&options),
             sizeof(options))))
         {
             ODERROR("The device doesn't support D3d12 options");
@@ -133,7 +142,7 @@ namespace GAL
         D3D12_COMMAND_QUEUE_DESC commandQueueDesc = {};
         commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        hr = mDevice->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&&mCommandQueue));
+        hr = m_device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&m_commandQueue));
         if (FAILED(hr)) {
             ODERROR("Command queue creation failed.");
             return false;
@@ -168,16 +177,16 @@ namespace GAL
 
 
         // Create the swap chain using the command queue, NOT using the device.  Thanks Killeak!
-        hr = dxgiFactory->CreateSwapChain(mCommandQueue.Get(), &swapChainDesc, (IDXGISwapChain**)mSwapChain.GetAddressOf());
+        hr = dxgiFactory->CreateSwapChain(m_commandQueue.Get(), &swapChainDesc, (IDXGISwapChain**)m_swapChain.GetAddressOf());
 
         //increase max frame latency when required
         if (swapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
         {
-            mSwapChain->SetMaximumFrameLatency(RendererD3D12::kBackBufferCount);
+            m_swapChain->SetMaximumFrameLatency(RendererD3D12::kBackBufferCount);
         }
 
         m_renderTargetViewDescriptorSize =
-            device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+            m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
         return SetupSwapChain();
     }
@@ -187,7 +196,7 @@ namespace GAL
         for (int i = 0; i < kBackBufferCount; ++i) {
             m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
                 IID_PPV_ARGS(&m_commandAllocators[i]));
-            device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+            m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
                 m_commandAllocators[i].Get(), nullptr,
                 IID_PPV_ARGS(&m_commandLists[i]));
             m_commandLists[i]->Close();
@@ -197,7 +206,9 @@ namespace GAL
 
    void RendererD3D12::DefineViewportScissor()
     {
-        m_rectScissor = { 0, 0, m_windowWidth, m_windowHeight };
+        m_rectScissor = { 0, 0,
+            static_cast<LONG>(m_windowWidth),
+            static_cast<LONG>(m_windowHeight) };
 
         m_viewport = { 0.0f, 0.0f,
             static_cast<float>(m_windowWidth),
@@ -241,13 +252,13 @@ namespace GAL
    bool RendererD3D12::CreatePipelineStateObject()
    {
        //Create vertex and pixel shader
-       m_vertexShader = std::make_unique<Shader>("P3F_C4F_Shaders.hlsl", "VSMain", Shader::TargetType::VertexShader);
+       m_vertexShader = std::make_unique<Shader>(L"Shaders\\P3F_C4F_Shaders.hlsl", "VSMain", Shader::TargetType::VertexShader);
        if (m_vertexShader->GetCompileError()) {
            ODERROR("Failed to compile vertex shader: %s", m_vertexShader->GetCompileError());
            return false;
        }
 
-       m_pixelShader = std::make_unique<Shader>("P3F_C4F_Shaders.hlsl", "PSMain", Shader::TargetType::PixelShader);
+       m_pixelShader = std::make_unique<Shader>(L"Shaders\\P3F_C4F_Shaders.hlsl", "PSMain", Shader::TargetType::PixelShader);
        if (m_pixelShader->GetCompileError()) {
            ODERROR("Failed to compile pixel shader: %s", m_pixelShader->GetCompileError());
            return false;
@@ -284,7 +295,7 @@ namespace GAL
        psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
 
        // create the pso
-       hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateObject.Get()));
+       HRESULT hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateObject));
        if (FAILED(hr))
        {
            ODERROR("Failed to create PSO: result=0x%08X", hr);
@@ -294,103 +305,130 @@ namespace GAL
        return true;
    }
 
+   void RendererD3D12::AddRenderNode(RenderNode* node)
+   {
+       m_renderNodes.push_back(node);
+   }
+
+   void RendererD3D12::WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent)
+   {
+       if (fence->GetCompletedValue() < completionValue) {
+           fence->SetEventOnCompletion(completionValue, waitEvent);
+           WaitForSingleObject(waitEvent, INFINITE);
+       }
+   }
+
+   void RendererD3D12::PrepareRender()
+   {
+       m_commandAllocators[m_currentBackBuffer]->Reset();
+
+       auto commandList = m_commandLists[m_currentBackBuffer].Get();
+       commandList->Reset(
+           m_commandAllocators[m_currentBackBuffer].Get(), nullptr);
+
+       D3D12_CPU_DESCRIPTOR_HANDLE renderTargetHandle;
+       CD3DX12_CPU_DESCRIPTOR_HANDLE::InitOffsetted(renderTargetHandle,
+           m_renderTargetDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+           m_currentBackBuffer, m_renderTargetViewDescriptorSize);
+
+       commandList->OMSetRenderTargets(1, &renderTargetHandle, true, nullptr);
+       commandList->RSSetViewports(1, &m_viewport);
+       commandList->RSSetScissorRects(1, &m_rectScissor);
+
+       // Transition back buffer
+       D3D12_RESOURCE_BARRIER barrier;
+       barrier.Transition.pResource = m_renderTargets[m_currentBackBuffer].Get();
+       barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+       barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+       barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+       commandList->ResourceBarrier(1, &barrier);
+
+       static const float clearColor[] = {
+           0.0f, 0.0f, 0.0f,
+           1.0f
+       };
+
+       commandList->ClearRenderTargetView(renderTargetHandle,
+           clearColor, 0, nullptr);
+
+   } // RendererD3D12::PrepareRender()
+
+   void RendererD3D12::FinalizeRender()
+   {
+       // Transition the swap chain back to present
+       D3D12_RESOURCE_BARRIER barrier;
+       barrier.Transition.pResource = m_renderTargets[m_currentBackBuffer].Get();
+       barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+       barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+       barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+       auto commandList = m_commandLists[m_currentBackBuffer].Get();
+       commandList->ResourceBarrier(1, &barrier);
+
+       commandList->Close();
+
+       // Execute our commands
+       ID3D12CommandList* commandLists[] = { commandList };
+       m_commandQueue->ExecuteCommandLists(std::extent<decltype(commandLists)>::value, commandLists);
+
+   } //RendererD3D12::FinalizeRender()
+
+
+   ///////////////////////////////////////////////////////////////////////////////
+   /**
+    * Present the current frame by swapping the back buffer, then move to the
+    * next back buffer and also signal the fence for the current queue slot entry.
+    */
+   void RendererD3D12::Swap()
+   {
+       m_swapChain->Present(1, 0);
+
+       // Mark the fence for the current frame.
+       const auto fenceValue = m_currentFenceValue;
+       m_commandQueue->Signal(m_frameFences[m_currentBackBuffer].Get(), fenceValue);
+       m_fenceValues[m_currentBackBuffer] = fenceValue;
+       ++m_currentFenceValue;
+
+       // Take the next back buffer from our chain
+       m_currentBackBuffer = (m_currentBackBuffer+ 1) % kBackBufferCount;
+
+   } //RendererD3D12::Swap()
+
     void RendererD3D12::RenderFrame()
     {
-        using namespace DirectX;
+        WaitForFence(m_frameFences[m_currentBackBuffer].Get(),
+            m_fenceValues[m_currentBackBuffer],
+            m_frameFenceEvents[m_currentBackBuffer]);
 
-        HRESULT hr;
+        PrepareRender();
 
-        if (g_requestResize) ResizeSwapChain();
+        auto commandList = m_commandLists[m_currentBackBuffer].Get();
+        //One day
+        //UpdateConstantBuffer();
 
-        //rotation in radians of 0-90, 270-360 degrees (skip backfacing angles)
-        static float angle = 0.0f;
-        angle += XM_PI / 180.0f;
-        if ((angle > XM_PI * 0.5f) && (angle < XM_PI * 1.5f)) angle = XM_PI * 1.5f;
-        if (angle > XM_2PI) angle = 0.0f;
+        // Set our state (shaders, etc.)
+        commandList->SetPipelineState(m_pipelineStateObject.Get());
 
-        //rotate worldmatrix around Y, transpose, and copy to the persistently mapped upload heap resource of the worldmatrix buffer
-        XMMATRIX rotated = XMMatrixIdentity();
-        rotated = XMMatrixRotationY(angle);
-        rotated = XMMatrixTranspose(rotated);
-        memcpy(mWorldMatrix.pDataBegin, &rotated, sizeof(rotated));
+        // Set our root signature
+        commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
-        //writing the view/proj buffers every frame, even tho they don't change in this example.
-        //build and copy viewmatrix to the persistently mapped viewmatrix buffer
-        XMVECTOR eye{ 0.0f, 0.0f, -2.0f, 0.0f };
-        XMVECTOR eyedir{ 0.0f, 0.0f, 0.0f, 0.0f };
-        XMVECTOR updir{ 0.0f, 1.0f, 0.0f, 0.0f };
-        XMMATRIX view = XMMatrixLookAtLH(eye, eyedir, updir);
-        view = XMMatrixTranspose(view);
-        memcpy(mViewMatrix.pDataBegin, &view, sizeof(view));
+        // Set descriptor heaps....
+        commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        for (auto& renderNode : m_renderNodes)
+        {
+            commandList->IASetVertexBuffers(0, 1, &renderNode->m_vertexBufferView);
+            commandList->IASetIndexBuffer(&renderNode->m_indexBufferView);
+            commandList->DrawIndexedInstanced(renderNode->m_numIndices, 1, 0, 0, 0);
+        }
 
-        //build and copy projection matrix to the persistently mapped projmatrix buffer
-        XMMATRIX proj = XMMatrixPerspectiveFovLH((XM_PI / 4.0f), (6.0f / 8.0f), 0.1f, 100.0f);
-        proj = XMMatrixTranspose(proj);
-        memcpy(mProjMatrix.pDataBegin, &proj, sizeof(proj));
+        FinalizeRender();
+        Swap();
 
-        //Get the index of the active back buffer from the swapchain
-        UINT backBufferIndex = 0;
-        backBufferIndex = mSwapChain->GetCurrentBackBufferIndex();
-
-
-        //get active RTV from descriptor heap wrapper class by index
-        D3D12_CPU_DESCRIPTOR_HANDLE rtv = mRTVDescriptorHeap.hCPU(backBufferIndex);
-
-
-        //Now, reuse the command list for the current frame.
-        //Reattach the viewport to the command list, indicate that the resource will be in use as a render target, record commands, and then 
-        //indicate that the render target will be used to present when the command list is done executing.
-
-        //This example shows calling ID3D12GraphicsCommandList::ResourceBarrier to indicate to the system that you are about to use a resource.
-        //Resource barriers are used to handle multiple accesses to a resource(refer to the Remarks for ResourceBarrier).
-        //You have to explicitly state that mRenderTarget is about to be changed from being "used to present" to being "used as a render target".
-        mCommandList->RSSetViewports(1, &mViewPort);
-        mCommandList->RSSetScissorRects(1, &mRectScissor);
-        mCommandList->SetPipelineState(g_PSO.Get());
-        mCommandList->SetGraphicsRootSignature(g_RootSig.Get());
-
-        //set the root CBV of the worldmatrix and the root descriptor table containing the view and proj matrices' view descriptors
-        mCommandList->SetGraphicsRootConstantBufferView(0, mWorldMatrix.pBuf->GetGPUVirtualAddress());
-        ID3D12DescriptorHeap* pHeaps[2] = { mCBDescriptorHeap.pDH.Get(), mSamplerHeap.pDH.Get() };
-        mCommandList->SetDescriptorHeaps(2, pHeaps); //this call IS necessary
-        mCommandList->SetGraphicsRootDescriptorTable(1, mCBDescriptorHeap.hGPUHeapStart);
-        //set the SRV and sampler tables
-        mCommandList->SetGraphicsRootDescriptorTable(2, mCBDescriptorHeap.hGPU(2)); //the single SRV was put on the end of the CB heap
-        mCommandList->SetGraphicsRootDescriptorTable(3, mSamplerHeap.hGPUHeapStart);
-
-        // Indicate that this resource will be in use as a render target.
-        setResourceBarrier(mCommandList.Get(), mRenderTarget[backBufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-        // Record commands.
-        float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-        mCommandList->ClearRenderTargetView(rtv, clearColor, NULL, 0);
-        mCommandList->OMSetRenderTargets(1, &rtv, TRUE, nullptr);
-        mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        mCommandList->IASetVertexBuffers(0, 1, &g_VB.GetView());
-        mCommandList->DrawInstanced(3, 1, 0, 0);
-
-        // Indicate that the render target will now be used to present when the command list is done executing.
-        setResourceBarrier(mCommandList.Get(), mRenderTarget[backBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-
-        // Execute the command list.
-        hr = mCommandList->Close();
-        mCommandQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)mCommandList.GetAddressOf());
-
-
-        // Swap the back and front buffers.
-        DXGI_PRESENT_PARAMETERS params;
-        ZeroMemory(&params, sizeof(params));
-        //hr = mSwapChain->Present1(0, DXGI_PRESENT_DO_NOT_WAIT, &params);
-        hr = mSwapChain->Present(0, 0);
-
-        //wait for GPU to signal it has finished processing the queued command list(s).
-        WaitForCommandQueueFence();
-
-
-        // Command list allocators can be only be reset when the associated command lists have finished execution on the GPU; 
-        // apps should use fences to determine GPU execution progress.
-        hr = mCommandListAllocator->Reset();
-        hr = mCommandList->Reset(mCommandListAllocator.Get(), NULL);
-    }
+    } // RendererD3D12::RenderFrame()
 
 }; //namespace GAL

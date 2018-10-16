@@ -9,7 +9,7 @@
 namespace GAL
 {
 
-    RenderNode::RenderNode()
+    RenderNode::RenderNode() : m_numIndices(0)
     {
     }
 
@@ -21,8 +21,9 @@ namespace GAL
     bool RenderNode::InitWithVertices(const P3F_C4F* vertices, uint32_t numVertices,
         const DWORD* indices, uint32_t numIndices)
     {
-        HRESULT hr;
         ID3D12Device* device = RendererD3D12::GetRenderer().GetDevice();
+
+        m_numIndices = numIndices;
 
         //FIXME: Move this into some kind of mesh object for efficient instancing
         //Create the vertex buffer
@@ -38,7 +39,7 @@ namespace GAL
                 D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
                                                 // from the upload heap to this heap
                 nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-                IID_PPV_ARGS(&m_vertexBuffer.Get()));
+                IID_PPV_ARGS(&m_vertexBuffer));
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
         m_vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
 
@@ -50,7 +51,7 @@ namespace GAL
             D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
                                             // from the upload heap to this heap
             nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-            IID_PPV_ARGS(&m_indexBuffer.Get()));
+            IID_PPV_ARGS(&m_indexBuffer));
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
         m_indexBuffer->SetName(L"Index Buffer Resource Heap");
 
@@ -64,7 +65,7 @@ namespace GAL
             &CD3DX12_RESOURCE_DESC::Buffer(vertexDataSize + indexDataSize), // resource description for a buffer
             D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
             nullptr,
-            IID_PPV_ARGS(&vBufferUploadHeap.Get()));
+            IID_PPV_ARGS(&vBufferUploadHeap));
         vBufferUploadHeap->SetName(L"V and I Buffer Upload Resource Heap");
 
         //Create the buffer views
@@ -72,25 +73,37 @@ namespace GAL
         m_vertexBufferView.SizeInBytes = vertexDataSize;
         m_vertexBufferView.StrideInBytes = sizeof(*vertices);
 
-        indexBufferView_.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-        indexBufferView_.SizeInBytes = sizeof(indices);
-        indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
-
-        ID3D12GraphicsCommandList* commandList = RendererD3D12::GetRenderer().GetCommandList();
+        m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
+        m_indexBufferView.SizeInBytes = sizeof(indices);
+        m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
         // Copy data on CPU into the upload buffer
         void* p;
         vBufferUploadHeap->Map(0, nullptr, &p);
-        ::memcpy(p, vertices, vertexDataSize;
+        ::memcpy(p, vertices, vertexDataSize);
         ::memcpy(static_cast<unsigned char*>(p) + vertexDataSize,
             indices, indexDataSize);
         vBufferUploadHeap->Unmap(0, nullptr);
 
+        // Create our temporary upload fence, command list and command allocator
+        // This will be only used while creating the mesh buffer
+        // to upload data to the GPU.
+        ComPtr<ID3D12Fence> uploadFence;
+        device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&uploadFence));
+
+        ComPtr<ID3D12CommandAllocator> uploadCommandAllocator;
+        device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+            IID_PPV_ARGS(&uploadCommandAllocator));
+        ComPtr<ID3D12GraphicsCommandList> uploadCommandList;
+        device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+            uploadCommandAllocator.Get(), nullptr,
+            IID_PPV_ARGS(&uploadCommandList));
+
         // Copy data from upload buffer on CPU into the vertex and index buffers on 
         // the GPU
-        commandList->CopyBufferRegion(m_vertexBuffer.Get(), 0,
+        uploadCommandList->CopyBufferRegion(m_vertexBuffer.Get(), 0,
             vBufferUploadHeap.Get(), 0, vertexDataSize);
-        commandList->CopyBufferRegion(m_IndexBuffer.Get(), 0,
+        uploadCommandList->CopyBufferRegion(m_indexBuffer.Get(), 0,
             vBufferUploadHeap.Get(), vertexDataSize, indexDataSize);
 
         // Barriers, batch them together
@@ -101,24 +114,23 @@ namespace GAL
                 D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER)
         };
 
-        commandList->ResourceBarrier(2, barriers);
+        uploadCommandList->ResourceBarrier(2, barriers);
 
-        // Now we execute the command list to upload the initial assets (triangle data)
-        commandList->Close();
+        uploadCommandList->Close();
 
-        ID3D12CommandList* ppCommandLists[] = { commandList };
+        // Execute the upload and finish the command list
         ID3D12CommandQueue* commandQueue = RendererD3D12::GetRenderer().GetCommandQueue();
+        ID3D12CommandList* commandLists[] = { uploadCommandList.Get() };
+        commandQueue->ExecuteCommandLists(std::extent<decltype(commandLists)>::value, commandLists);
+        commandQueue->Signal(uploadFence.Get(), 1);
 
-        commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+        auto waitEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+        RendererD3D12::WaitForFence(uploadFence.Get(), 1, waitEvent);
 
-        // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-        fenceValue[frameIndex]++;
-        hr = commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
-        if (FAILED(hr))
-        {
-            Running = false;
-        }
+        // Cleanup our upload handle
+        uploadCommandAllocator->Reset();
 
+        CloseHandle(waitEvent);
 
         return true;
     }

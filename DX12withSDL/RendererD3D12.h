@@ -26,6 +26,7 @@ namespace GAL
         bool Init(HWND hWnd);
         void RenderFrame();
         void AddRenderNode(RenderNode* node);
+        void CleanUp();
 
         ID3D12Device* GetDevice() { return m_device.Get();  }
         ID3D12CommandQueue* GetCommandQueue() { return m_commandQueue.Get(); }
@@ -42,8 +43,8 @@ namespace GAL
         bool CreateRootSignature(); //Init
         bool CreatePipelineStateObject(); //Init
 
-        void PrepareRender();
-        void FinalizeRender();
+        void PreRender();
+        void PostRender();
         void Swap();
 
         static  RendererD3D12 s_renderer;

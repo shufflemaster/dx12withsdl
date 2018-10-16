@@ -124,9 +124,27 @@ namespace GAL
         }
 #endif
 
+        // Get the DXGI factory used to create the swap chain.
+        // REMARK: We are creating the factory before the device, because ideally
+        // you'd want to enumerate adapters before creating a device.
+        ComPtr<IDXGIFactory4> dxgiFactory = nullptr;
+        HRESULT hr = CreateDXGIFactory2(
+#ifdef _DEBUG
+            DXGI_CREATE_FACTORY_DEBUG,
+#else
+            0,
+#endif
+            IID_PPV_ARGS(&dxgiFactory));
+        if (FAILED(hr))
+        {
+            ODERROR("DXGI factory creation failed.");
+            return false;
+        }
+
+
         //This example shows calling D3D12CreateDevice to create the device.
         //GAL: Minimum supported d3d version is 11. 
-        HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0,
+        hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0,
             IID_PPV_ARGS(&m_device));
 
         D3D12_FEATURE_DATA_D3D12_OPTIONS options;
@@ -163,17 +181,7 @@ namespace GAL
         swapChainDesc.Flags = 0; //DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         //Documentation recommends flip_sequential for D3D12, see - https://msdn.microsoft.com/en-us/library/windows/desktop/dn903945
-        //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-
-
-        // Get the DXGI factory used to create the swap chain.
-        ComPtr<IDXGIFactory4> dxgiFactory = nullptr;
-        hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
-        if (FAILED(hr))
-        {
-            ODERROR("DXGI factory creation failed.");
-            return false;
-        }
+        //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
 
 
         // Create the swap chain using the command queue, NOT using the device.  Thanks Killeak!
@@ -310,6 +318,26 @@ namespace GAL
        m_renderNodes.push_back(node);
    }
 
+   void RendererD3D12::CleanUp()
+   {
+       // Drain the queue, wait for everything to finish
+       for (int i = 0; i < kBackBufferCount; ++i) {
+           WaitForFence(m_frameFences[i].Get(), m_fenceValues[i],m_frameFenceEvents[i]);
+       }
+
+       //Release the fence events
+       for (auto evt : m_frameFenceEvents) {
+           CloseHandle(evt);
+       }
+
+       //Release the render nodes.
+       for (RenderNode* renderNode : m_renderNodes)
+       {
+           delete renderNode;
+       }
+       m_renderNodes.clear();
+   }
+
    void RendererD3D12::WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent)
    {
        if (fence->GetCompletedValue() < completionValue) {
@@ -318,7 +346,7 @@ namespace GAL
        }
    }
 
-   void RendererD3D12::PrepareRender()
+   void RendererD3D12::PreRender()
    {
        m_commandAllocators[m_currentBackBuffer]->Reset();
 
@@ -356,7 +384,7 @@ namespace GAL
 
    } // RendererD3D12::PrepareRender()
 
-   void RendererD3D12::FinalizeRender()
+   void RendererD3D12::PostRender()
    {
        // Transition the swap chain back to present
        D3D12_RESOURCE_BARRIER barrier;
@@ -405,7 +433,7 @@ namespace GAL
             m_fenceValues[m_currentBackBuffer],
             m_frameFenceEvents[m_currentBackBuffer]);
 
-        PrepareRender();
+        PreRender();
 
         auto commandList = m_commandLists[m_currentBackBuffer].Get();
         //One day
@@ -419,14 +447,14 @@ namespace GAL
 
         // Set descriptor heaps....
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        for (auto& renderNode : m_renderNodes)
+        for (RenderNode* renderNode : m_renderNodes)
         {
             commandList->IASetVertexBuffers(0, 1, &renderNode->m_vertexBufferView);
             commandList->IASetIndexBuffer(&renderNode->m_indexBufferView);
             commandList->DrawIndexedInstanced(renderNode->m_numIndices, 1, 0, 0, 0);
         }
 
-        FinalizeRender();
+        PostRender();
         Swap();
 
     } // RendererD3D12::RenderFrame()

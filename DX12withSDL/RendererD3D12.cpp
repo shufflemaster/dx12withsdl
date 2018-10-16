@@ -386,7 +386,7 @@ namespace GAL
     */
    void RendererD3D12::Swap()
    {
-       m_swapChain->Present(1, 0);
+       m_swapChain->Present(0, 0);
 
        // Mark the fence for the current frame.
        const auto fenceValue = m_currentFenceValue;

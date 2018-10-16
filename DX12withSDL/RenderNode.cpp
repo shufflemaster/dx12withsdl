@@ -74,7 +74,7 @@ namespace GAL
         m_vertexBufferView.StrideInBytes = sizeof(*vertices);
 
         m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-        m_indexBufferView.SizeInBytes = sizeof(indices);
+        m_indexBufferView.SizeInBytes = indexDataSize;
         m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
         // Copy data on CPU into the upload buffer

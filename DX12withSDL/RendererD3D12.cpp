@@ -39,6 +39,10 @@ namespace GAL
             {
                 break;
             }
+            if (!CreateDepthStencilBuffer())
+            {
+                break;
+            }
             if (!CreateAllocatorsAndCommandLists())
             {
                 break;
@@ -199,6 +203,52 @@ namespace GAL
         return SetupSwapChain();
     }
 
+    bool RendererD3D12::CreateDepthStencilBuffer()
+    {
+        // create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
+        D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+        dsvHeapDesc.NumDescriptors = 1;
+        dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+        dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+        HRESULT hr = m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_depthStencilDescriptorHeap));
+        if (FAILED(hr))
+        {
+            ODERROR("Failed to create DepthStencil descriptor heap. hr=0x%X", hr);
+            return false;
+        }
+        m_depthStencilDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
+
+
+        D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+        depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+        depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+        depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+        hr = m_device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+            D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_windowWidth, m_windowHeight,
+                                          1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
+            &depthOptimizedClearValue,
+            IID_PPV_ARGS(&m_depthStencilBuffer)
+        );
+        if (FAILED(hr))
+        {
+            ODERROR("Failed to create DepthStencil buffer. hr=0x%X", hr);
+            return false;
+        }
+
+        D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+        depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+        depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+        depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+        m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilDesc,
+            m_depthStencilDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+        return true;
+    }
+
     bool RendererD3D12::CreateAllocatorsAndCommandLists()
     {
         for (int i = 0; i < kBackBufferCount; ++i) {
@@ -298,8 +348,7 @@ namespace GAL
        psoDesc.NumRenderTargets = 1; // we only have one format in RTVFormats[8]
        psoDesc.SampleDesc.Count = MY_SAMPLE_DESC_COUNT; // must be the same sample description as the swapchain and depth/stencil buffer
        psoDesc.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
-       psoDesc.DepthStencilState.DepthEnable = false;
-       psoDesc.DepthStencilState.StencilEnable = false;
+       psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); // a default depth stencil state
        psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
 
        // create the pso
@@ -359,7 +408,9 @@ namespace GAL
            m_renderTargetDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
            m_currentBackBuffer, m_renderTargetViewDescriptorSize);
 
-       commandList->OMSetRenderTargets(1, &renderTargetHandle, true, nullptr);
+       CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilHandle(m_depthStencilDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+       commandList->OMSetRenderTargets(1, &renderTargetHandle, true, &depthStencilHandle);
        commandList->RSSetViewports(1, &m_viewport);
        commandList->RSSetScissorRects(1, &m_rectScissor);
 
@@ -381,6 +432,7 @@ namespace GAL
 
        commandList->ClearRenderTargetView(renderTargetHandle,
            clearColor, 0, nullptr);
+       commandList->ClearDepthStencilView(depthStencilHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
    } // RendererD3D12::PrepareRender()
 

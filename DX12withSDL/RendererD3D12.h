@@ -38,6 +38,7 @@ namespace GAL
         bool SetupRenderTargets();
         bool SetupSwapChain();
         bool CreateDeviceAndSwapChain(HWND hWnd); //Init
+        bool CreateDepthStencilBuffer(); //Init
         bool CreateAllocatorsAndCommandLists(); //Init
         void DefineViewportScissor(); //Init
         bool CreateRootSignature(); //Init
@@ -65,12 +66,15 @@ namespace GAL
         ComPtr<ID3D12Device> m_device;					//d3d12 device
         ComPtr<ID3D12CommandQueue> m_commandQueue; //d3d12 command queue
         ComPtr<IDXGISwapChain3> m_swapChain;   // the pointer to the swap chain interface
+
         ComPtr<ID3D12DescriptorHeap> m_renderTargetDescriptorHeap;
+        ComPtr<ID3D12Resource> m_renderTargets[kBackBufferCount]; //backbuffer resource, like d3d11's ID3D11Texture2D, array of 2 for flip_sequential support
 
         ComPtr<ID3D12CommandAllocator> m_commandAllocators[kBackBufferCount]; //d3d12 command list allocators
         ComPtr<ID3D12GraphicsCommandList> m_commandLists[kBackBufferCount] ;  //d3d12 command list for the renderer. All other threads will have its own command list.
-        ComPtr<ID3D12Resource> m_renderTargets[kBackBufferCount]; //backbuffer resource, like d3d11's ID3D11Texture2D, array of 2 for flip_sequential support
-        //CDescriptorHeapWrapper mRTVDescriptorHeap; //descriptor heap wrapper class instance, for managing RTV descriptor heap
+        
+        ComPtr<ID3D12DescriptorHeap> m_depthStencilDescriptorHeap;
+        ComPtr<ID3D12Resource> m_depthStencilBuffer;
 
         //The fences
         HANDLE m_frameFenceEvents[kBackBufferCount];

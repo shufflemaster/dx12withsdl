@@ -7,6 +7,9 @@ using namespace std;
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
+#include <DirectXMath.h>
+using namespace DirectX;
+
 #include "Shader.h"
 using Microsoft::WRL::ComPtr;
 
@@ -32,5 +35,7 @@ namespace GAL
                                                    // the total size of the buffer, and the size of each element (index)
 
         uint32_t m_numIndices;
+
+        XMFLOAT4X4 m_worldMatrix;
     };
 };

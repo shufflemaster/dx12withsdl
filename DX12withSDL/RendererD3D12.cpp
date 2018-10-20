@@ -56,6 +56,13 @@ namespace GAL
             {
                 break;
             }
+            if (!CreateConstantBuffer())
+            {
+                break;
+            }
+
+            DefineCameraAndProjectionMatrices();
+
             retVal = true;
         } while (0);
 
@@ -277,8 +284,17 @@ namespace GAL
 
    bool RendererD3D12::CreateRootSignature()
    {
-       //This is the most simple root signature, because there are no parameters, no matrices,
-       //no textures, etc. Only the vertices data are relevant.
+       // create a root descriptor, which explains where to find the data for this root parameter
+       D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
+       rootCBVDescriptor.ShaderRegister = 0; //b0 register.
+       rootCBVDescriptor.RegisterSpace = 0; //Default register space.
+
+       // create the root parameter and fill it out as a Root Descriptor (One level of indirection).
+       D3D12_ROOT_PARAMETER  rootParameters[1]; // only one parameter right now
+       rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+       rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
+       rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+
        ComPtr<ID3DBlob> rootBlob;
        ComPtr<ID3DBlob> errorBlob;
 
@@ -290,7 +306,7 @@ namespace GAL
        CD3DX12_ROOT_SIGNATURE_DESC descRootSignature;
 
        // Create the root signature
-       descRootSignature.Init(0, nullptr,
+       descRootSignature.Init(1, rootParameters,
            1, samplers,
            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
            D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
@@ -344,7 +360,7 @@ namespace GAL
        psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); // a default rasterizer state.
        psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT); // a default blend state.
        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // format of the render target
-       psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+       psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
        psoDesc.NumRenderTargets = 1; // we only have one format in RTVFormats[8]
        psoDesc.SampleDesc.Count = MY_SAMPLE_DESC_COUNT; // must be the same sample description as the swapchain and depth/stencil buffer
        psoDesc.SampleDesc.Quality = MY_SAMPLE_DESC_QUALITY;
@@ -360,6 +376,47 @@ namespace GAL
        }
 
        return true;
+   }
+
+   bool RendererD3D12::CreateConstantBuffer()
+   {
+       HRESULT hr;
+
+       for (int i = 0; i < kBackBufferCount; ++i)
+       {
+           // create resource for cube 1
+           hr = m_device->CreateCommittedResource(
+               &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
+               D3D12_HEAP_FLAG_NONE, // no flags
+               &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
+               D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
+               nullptr, // we do not have use an optimized clear value for constant buffers
+               IID_PPV_ARGS(&m_wvpMatrixConstantBufferUploadHeaps[i]));
+           if (FAILED(hr))
+           {
+               ODERROR("Failed to create constant buffer for backBuffer Index %d", i);
+               return false;
+           }
+       }
+   }
+
+   void RendererD3D12::DefineCameraAndProjectionMatrices()
+   {
+       // build projection and view matrix
+       XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14159f / 180.0f), (float)m_windowWidth / (float)m_windowHeight, 0.1f, 1000.0f);
+       XMStoreFloat4x4(&m_cameraProjMat, tmpMat);
+
+       // set starting camera state
+       XMFLOAT4 cameraPosition = XMFLOAT4(0.0f, 0.0f, -4.0f, 0.0f);
+       XMFLOAT4 cameraTarget = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+       XMFLOAT4 cameraUp = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
+
+       // build view matrix
+       XMVECTOR cPos = XMLoadFloat4(&cameraPosition);
+       XMVECTOR cTarg = XMLoadFloat4(&cameraTarget);
+       XMVECTOR cUp = XMLoadFloat4(&cameraUp);
+       tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
+       XMStoreFloat4x4(&m_cameraViewMat, tmpMat);
    }
 
    void RendererD3D12::AddRenderNode(RenderNode* node)
@@ -458,6 +515,16 @@ namespace GAL
 
    } //RendererD3D12::FinalizeRender()
 
+   void RendererD3D12::CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix)
+   {
+       XMMATRIX objWorldMat = XMLoadFloat4x4(&objWorldMatrix);
+       XMMATRIX cameraViewMat = XMLoadFloat4x4(&m_cameraViewMat);
+       XMMATRIX cameraProjMat = XMLoadFloat4x4(&m_cameraProjMat);
+       XMMATRIX wvpMat = objWorldMat * cameraViewMat * cameraProjMat;
+
+       //Remember that HLSL is column major, so we need to transpose.
+       XMStoreFloat4x4(&wvpMatrixOut, XMMatrixTranspose(wvpMat));
+   }
 
    ///////////////////////////////////////////////////////////////////////////////
    /**
@@ -501,6 +568,18 @@ namespace GAL
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         for (RenderNode* renderNode : m_renderNodes)
         {
+            //Update
+            XMFLOAT4X4 wvpMatrix;
+            CalculateWVPMatrixForShader(wvpMatrix, renderNode->m_worldMatrix);
+
+            //Upload the new matrix data.
+            CD3DX12_RANGE readRange(0, 0);
+            void* cpuAddress;
+            m_wvpMatrixConstantBufferUploadHeaps[m_currentBackBuffer]->Map(0, &readRange, &cpuAddress);
+            memcpy(cpuAddress, &wvpMatrix, sizeof(XMFLOAT4X4));
+            m_wvpMatrixConstantBufferUploadHeaps[m_currentBackBuffer]->Unmap(0, nullptr);
+
+            commandList->SetGraphicsRootConstantBufferView(0, m_wvpMatrixConstantBufferUploadHeaps[m_currentBackBuffer]->GetGPUVirtualAddress());
             commandList->IASetVertexBuffers(0, 1, &renderNode->m_vertexBufferView);
             commandList->IASetIndexBuffer(&renderNode->m_indexBufferView);
             commandList->DrawIndexedInstanced(renderNode->m_numIndices, 1, 0, 0, 0);

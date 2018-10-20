@@ -8,6 +8,8 @@ using namespace std;
 
 #include <dxgi1_4.h>
 #include <d3d12.h>
+#include <DirectXMath.h>
+using namespace DirectX;
 #include <wrl/client.h>
 
 using Microsoft::WRL::ComPtr;
@@ -43,10 +45,14 @@ namespace GAL
         void DefineViewportScissor(); //Init
         bool CreateRootSignature(); //Init
         bool CreatePipelineStateObject(); //Init
+        bool CreateConstantBuffer(); //Init
+        void DefineCameraAndProjectionMatrices();
 
         void PreRender();
         void PostRender();
         void Swap();
+
+        void CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix);
 
         static  RendererD3D12 s_renderer;
 
@@ -76,6 +82,15 @@ namespace GAL
         ComPtr<ID3D12DescriptorHeap> m_depthStencilDescriptorHeap;
         ComPtr<ID3D12Resource> m_depthStencilBuffer;
 
+        //As a rendering pass, we expect all objects to have a World matrix.
+        //The renderer owns the View and Projection matrices. And the renderer
+        //will take each object world matrix and generate a unique W*V*P matrix that will
+        //be fed to b0 shader register.
+        //This the resource upload heap that will be used to setup the WVP matrix
+        ComPtr<ID3D12Resource> m_wvpMatrixConstantBufferUploadHeaps[kBackBufferCount]; // this is the memory on the gpu where constant buffers for each frame will be placed
+        UINT8* m_wvpConstantBufferViewGPUAddress[kBackBufferCount]; // this is a pointer to each of the constant buffer resource heaps
+        
+
         //The fences
         HANDLE m_frameFenceEvents[kBackBufferCount];
         ComPtr<ID3D12Fence> m_frameFences[kBackBufferCount];
@@ -88,6 +103,9 @@ namespace GAL
         UINT m_windowWidth, m_windowHeight;
         D3D12_VIEWPORT m_viewport;
         D3D12_RECT m_rectScissor;
+
+        XMFLOAT4X4 m_cameraProjMat; // this will store our projection matrix
+        XMFLOAT4X4 m_cameraViewMat; // this will store our view matrix
 
         ComPtr <ID3D12RootSignature> m_rootSignature; // root signature defines data shaders will access
         ComPtr <ID3D12PipelineState> m_pipelineStateObject; // pso containing a pipeline state (shaders are also part of the state).

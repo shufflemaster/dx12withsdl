@@ -8,13 +8,18 @@ struct VSOutput
 	float4 color : COLOR;
 };
 
+cbuffer ConstantBuffer : register(b0)
+{
+    float4x4 wvpMat;
+};
+
 // Vertex Shader
 VSOutput VSMain(float3 pos : POSITION, float4 color : COLOR)
 {
-	VSOutput vsOut;
-	vsOut.pos = float4(pos, 1.0);
+    VSOutput vsOut;
+    vsOut.pos = mul(float4(pos, 1.0), wvpMat);
     vsOut.color = color;
-	return vsOut;
+    return vsOut;
 }
 
 // Pixel Shader

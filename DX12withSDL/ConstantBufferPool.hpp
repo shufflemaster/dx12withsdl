@@ -20,7 +20,7 @@ namespace GAL {
         virtual ~ConstantBufferPool();
 
         bool Init(ID3D12Device* device);
-        D3D12_GPU_VIRTUAL_ADDRESS UploadData(const T* dataPtr, int backBufferIdx, int itemIdx);
+        D3D12_GPU_VIRTUAL_ADDRESS UploadData(const T* srcDataPtr, int backBufferIdx, int itemIdx);
 
     private:
         static const int D3D12_CONSTANT_BUFFER_SIZE = 64 * 1024;
@@ -73,7 +73,7 @@ namespace GAL {
     }
 
     template<typename T, const int backBufferCount, const int maxItems>
-    D3D12_GPU_VIRTUAL_ADDRESS ConstantBufferPool<T, backBufferCount, maxItems>::UploadData(const T* dataPtr, int backBufferIdx, int itemIdx)
+    D3D12_GPU_VIRTUAL_ADDRESS ConstantBufferPool<T, backBufferCount, maxItems>::UploadData(const T* srcDataPtr, int backBufferIdx, int itemIdx)
     {
         assert(backBufferIdx < backBufferCount);
         assert(itemIdx < maxItems);
@@ -86,7 +86,7 @@ namespace GAL {
         CD3DX12_RANGE readRange(0, 0);
         void* cpuAddress;
         uploadHeap->Map(0, &readRange, &cpuAddress);
-        memcpy((char*)cpuAddress + (subItemIdx * m_alignedItemSize), dataPtr, sizeof(T));
+        memcpy((char*)cpuAddress + (subItemIdx * m_alignedItemSize), srcDataPtr, sizeof(T));
         uploadHeap->Unmap(0, nullptr);
 
         return uploadHeap->GetGPUVirtualAddress() + (subItemIdx * m_alignedItemSize);

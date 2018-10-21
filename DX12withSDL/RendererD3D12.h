@@ -94,8 +94,6 @@ namespace GAL
         //be fed to b0 shader register.
         //This the pool of constant buffers that will hold the WVP Matrix for each visible object in the scene.
         ConstantBufferPool<PerObjectConstantBufferData, kBackBufferCount, 1024> m_constantBufferPool; 
-        UINT8* m_wvpConstantBufferViewGPUAddress[kBackBufferCount]; // this is a pointer to each of the constant buffer resource heaps
-        
 
         //The fences
         HANDLE m_frameFenceEvents[kBackBufferCount];

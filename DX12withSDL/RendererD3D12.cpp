@@ -17,6 +17,10 @@ namespace GAL
 
     RendererD3D12::RendererD3D12() : m_currentBackBuffer(0)
     {
+        m_cameraSpeed = 4.0f; //World units per second
+        m_cameraInput = {0.0f, 0.0f, 0.0f};
+        m_cameraDirection = {0.0f, 0.0f, 1.0f};
+        m_cameraPosition = {0.0f, 0.0f, -4.0f};
     }
 
 
@@ -60,8 +64,6 @@ namespace GAL
             {
                 break;
             }
-
-            DefineCameraAndProjectionMatrices();
 
             retVal = true;
         } while (0);
@@ -383,22 +385,34 @@ namespace GAL
        return m_constantBufferPool.Init(m_device.Get());
    }
 
-   void RendererD3D12::DefineCameraAndProjectionMatrices()
+   void RendererD3D12::UpdateCameraAndProjectionMatrices(float deltaTimeMillis)
    {
        // build projection and view matrix
        XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14159f / 180.0f), (float)m_windowWidth / (float)m_windowHeight, 0.1f, 1000.0f);
        XMStoreFloat4x4(&m_cameraProjMat, tmpMat);
 
-       // set starting camera state
-       XMFLOAT4 cameraPosition = XMFLOAT4(0.0f, 0.0f, -4.0f, 0.0f);
-       XMFLOAT4 cameraTarget = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-       XMFLOAT4 cameraUp = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-
        // build view matrix
-       XMVECTOR cPos = XMLoadFloat4(&cameraPosition);
-       XMVECTOR cTarg = XMLoadFloat4(&cameraTarget);
-       XMVECTOR cUp = XMLoadFloat4(&cameraUp);
-       tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
+       XMVECTOR position = XMLoadFloat3(&m_cameraPosition);
+       //XMVECTOR velocity = XMLoadFloat3(&m_cameraInput);
+
+       // Calculate how much to move in the current camera direction.
+       XMVECTOR direction = XMLoadFloat3(&m_cameraDirection);
+       XMVECTOR forwardDisplacement = direction * m_cameraInput.z * m_cameraSpeed * deltaTimeMillis * 0.001f;
+
+       XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+       XMVECTOR cameraRight = XMVector3Cross(up, direction);
+       cameraRight = XMVector3Normalize(cameraRight);
+       XMVECTOR lateralDisplacement = cameraRight * m_cameraInput.x * m_cameraSpeed * deltaTimeMillis * 0.001f;
+
+       //Move the camera.
+       position += forwardDisplacement;
+       position += lateralDisplacement;
+
+       //Save the new position
+       XMStoreFloat3(&m_cameraPosition, position);
+
+       XMVECTOR cTarg = position + direction;
+       tmpMat = XMMatrixLookAtLH(position, cTarg, up);
        XMStoreFloat4x4(&m_cameraViewMat, tmpMat);
    }
 
@@ -529,11 +543,13 @@ namespace GAL
 
    } //RendererD3D12::Swap()
 
-    void RendererD3D12::RenderFrame()
+    void RendererD3D12::RenderFrame(float deltaTimeMillis)
     {
         WaitForFence(m_frameFences[m_currentBackBuffer].Get(),
             m_fenceValues[m_currentBackBuffer],
             m_frameFenceEvents[m_currentBackBuffer]);
+
+        UpdateCameraAndProjectionMatrices(deltaTimeMillis);
 
         PreRender();
 

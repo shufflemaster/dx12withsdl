@@ -13,6 +13,7 @@ using namespace DirectX;
 #include <wrl/client.h>
 
 #include "ConstantBufferPool.hpp"
+#include "InputManager.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -25,20 +26,27 @@ namespace GAL
         XMFLOAT4X4 wvpMatrix;
     };
 
-    class RendererD3D12
+    //FIXME! There's no reason for the Renderer to be an input listener
+    class RendererD3D12 : public IInputListener
     {
     public:
         static  RendererD3D12& GetRenderer() { return s_renderer; }
         virtual ~RendererD3D12();
 
         bool Init(HWND hWnd);
-        void RenderFrame();
+        void RenderFrame(float deltaTimeMillis);
         void AddRenderNode(RenderNode* node);
         void CleanUp();
 
         ID3D12Device* GetDevice() { return m_device.Get();  }
         ID3D12CommandQueue* GetCommandQueue() { return m_commandQueue.Get(); }
         static void WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent);
+
+        //IInputListener
+        void OnMoveForward(float value) { m_cameraInput.z = value; }
+        void OnMoveBack(float value) { m_cameraInput.z = -value; }
+        void OnMoveLeft(float value) { m_cameraInput.x = -value; }
+        void OnMoveRight(float value) { m_cameraInput.x = value; }
 
     private:
         RendererD3D12();
@@ -52,7 +60,7 @@ namespace GAL
         bool CreateRootSignature(); //Init
         bool CreatePipelineStateObject(); //Init
         bool CreateConstantBuffer(); //Init
-        void DefineCameraAndProjectionMatrices();
+        void UpdateCameraAndProjectionMatrices(float deltaTimeMillis);
 
         void PreRender();
         void PostRender();
@@ -110,6 +118,11 @@ namespace GAL
 
         XMFLOAT4X4 m_cameraProjMat; // this will store our projection matrix
         XMFLOAT4X4 m_cameraViewMat; // this will store our view matrix
+        float m_cameraSpeed;
+        XMFLOAT3 m_cameraInput;
+        XMFLOAT3 m_cameraDirection;
+        XMFLOAT3 m_cameraPosition;
+
 
         ComPtr <ID3D12RootSignature> m_rootSignature; // root signature defines data shaders will access
         ComPtr <ID3D12PipelineState> m_pipelineStateObject; // pso containing a pipeline state (shaders are also part of the state).

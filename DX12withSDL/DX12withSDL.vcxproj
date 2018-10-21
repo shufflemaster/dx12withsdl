@@ -167,6 +167,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ConstantBufferPool.hpp" />
     <ClInclude Include="LogUtils.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PerfCounter.h" />

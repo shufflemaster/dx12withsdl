@@ -12,12 +12,18 @@ using namespace std;
 using namespace DirectX;
 #include <wrl/client.h>
 
+#include "ConstantBufferPool.hpp"
+
 using Microsoft::WRL::ComPtr;
 
 namespace GAL
 {
     class Shader;
     class RenderNode;
+
+    struct PerObjectConstantBufferData {
+        XMFLOAT4X4 wvpMatrix;
+    };
 
     class RendererD3D12
     {
@@ -86,8 +92,8 @@ namespace GAL
         //The renderer owns the View and Projection matrices. And the renderer
         //will take each object world matrix and generate a unique W*V*P matrix that will
         //be fed to b0 shader register.
-        //This the resource upload heap that will be used to setup the WVP matrix
-        ComPtr<ID3D12Resource> m_wvpMatrixConstantBufferUploadHeaps[kBackBufferCount]; // this is the memory on the gpu where constant buffers for each frame will be placed
+        //This the pool of constant buffers that will hold the WVP Matrix for each visible object in the scene.
+        ConstantBufferPool<PerObjectConstantBufferData, kBackBufferCount, 1024> m_constantBufferPool; 
         UINT8* m_wvpConstantBufferViewGPUAddress[kBackBufferCount]; // this is a pointer to each of the constant buffer resource heaps
         
 

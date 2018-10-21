@@ -380,24 +380,7 @@ namespace GAL
 
    bool RendererD3D12::CreateConstantBuffer()
    {
-       HRESULT hr;
-
-       for (int i = 0; i < kBackBufferCount; ++i)
-       {
-           // create resource for cube 1
-           hr = m_device->CreateCommittedResource(
-               &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
-               D3D12_HEAP_FLAG_NONE, // no flags
-               &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
-               D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
-               nullptr, // we do not have use an optimized clear value for constant buffers
-               IID_PPV_ARGS(&m_wvpMatrixConstantBufferUploadHeaps[i]));
-           if (FAILED(hr))
-           {
-               ODERROR("Failed to create constant buffer for backBuffer Index %d", i);
-               return false;
-           }
-       }
+       return m_constantBufferPool.Init(m_device.Get());
    }
 
    void RendererD3D12::DefineCameraAndProjectionMatrices()
@@ -566,23 +549,20 @@ namespace GAL
 
         // Set descriptor heaps....
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        int renderObjectIdx = 0;
         for (RenderNode* renderNode : m_renderNodes)
         {
             //Update
-            XMFLOAT4X4 wvpMatrix;
-            CalculateWVPMatrixForShader(wvpMatrix, renderNode->m_worldMatrix);
+            PerObjectConstantBufferData cbData;
+            CalculateWVPMatrixForShader(cbData.wvpMatrix, renderNode->m_worldMatrix);
 
-            //Upload the new matrix data.
-            CD3DX12_RANGE readRange(0, 0);
-            void* cpuAddress;
-            m_wvpMatrixConstantBufferUploadHeaps[m_currentBackBuffer]->Map(0, &readRange, &cpuAddress);
-            memcpy(cpuAddress, &wvpMatrix, sizeof(XMFLOAT4X4));
-            m_wvpMatrixConstantBufferUploadHeaps[m_currentBackBuffer]->Unmap(0, nullptr);
-
-            commandList->SetGraphicsRootConstantBufferView(0, m_wvpMatrixConstantBufferUploadHeaps[m_currentBackBuffer]->GetGPUVirtualAddress());
+            D3D12_GPU_VIRTUAL_ADDRESS cbvGpuAddress = m_constantBufferPool.UploadData(&cbData, m_currentBackBuffer, renderObjectIdx);
+            commandList->SetGraphicsRootConstantBufferView(0, cbvGpuAddress);
             commandList->IASetVertexBuffers(0, 1, &renderNode->m_vertexBufferView);
             commandList->IASetIndexBuffer(&renderNode->m_indexBufferView);
             commandList->DrawIndexedInstanced(renderNode->m_numIndices, 1, 0, 0, 0);
+
+            renderObjectIdx++;
         }
 
         PostRender();

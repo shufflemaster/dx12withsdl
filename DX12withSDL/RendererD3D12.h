@@ -43,10 +43,10 @@ namespace GAL
         static void WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent);
 
         //IInputListener
-        void OnMoveForward(float value) { m_cameraInput.z = value; }
-        void OnMoveBack(float value) { m_cameraInput.z = -value; }
-        void OnMoveLeft(float value) { m_cameraInput.x = -value; }
-        void OnMoveRight(float value) { m_cameraInput.x = value; }
+        void OnMoveForward(float value, bool isDiscrete);
+        void OnMoveRight(float value, bool isDiscrete);
+        void OnMoveUp(float value, bool isDiscrete);
+        void OnMoveYawPitch(float yaw, float pitch);
 
     private:
         RendererD3D12();
@@ -120,7 +120,7 @@ namespace GAL
         XMFLOAT4X4 m_cameraViewMat; // this will store our view matrix
         float m_cameraSpeed;
         XMFLOAT3 m_cameraInput;
-        XMFLOAT3 m_cameraDirection;
+        XMFLOAT3 m_cameraForward;
         XMFLOAT3 m_cameraPosition;
 
 

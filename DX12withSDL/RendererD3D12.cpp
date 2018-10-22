@@ -19,7 +19,7 @@ namespace GAL
     {
         m_cameraSpeed = 4.0f; //World units per second
         m_cameraInput = {0.0f, 0.0f, 0.0f};
-        m_cameraDirection = {0.0f, 0.0f, 1.0f};
+        m_cameraForward = {0.0f, 0.0f, 1.0f};
         m_cameraPosition = {0.0f, 0.0f, -4.0f};
     }
 
@@ -396,23 +396,28 @@ namespace GAL
        //XMVECTOR velocity = XMLoadFloat3(&m_cameraInput);
 
        // Calculate how much to move in the current camera direction.
-       XMVECTOR direction = XMLoadFloat3(&m_cameraDirection);
-       XMVECTOR forwardDisplacement = direction * m_cameraInput.z * m_cameraSpeed * deltaTimeMillis * 0.001f;
+       XMVECTOR camForward = XMLoadFloat3(&m_cameraForward);
+       XMVECTOR forwardDisplacement = camForward * m_cameraInput.z * m_cameraSpeed * deltaTimeMillis * 0.001f;
 
-       XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-       XMVECTOR cameraRight = XMVector3Cross(up, direction);
-       cameraRight = XMVector3Normalize(cameraRight);
-       XMVECTOR lateralDisplacement = cameraRight * m_cameraInput.x * m_cameraSpeed * deltaTimeMillis * 0.001f;
+       XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+       XMVECTOR camRight = XMVector3Cross(camUp, camForward);
+       camRight = XMVector3Normalize(camRight);
+       XMVECTOR rightDisplacement = camRight * m_cameraInput.x * m_cameraSpeed * deltaTimeMillis * 0.001f;
+
+       camUp = XMVector3Cross(camForward, camRight);
+       camUp = XMVector3Normalize(camUp);
+       XMVECTOR upDisplacement = camUp * m_cameraInput.y * m_cameraSpeed * deltaTimeMillis * 0.001f;
 
        //Move the camera.
        position += forwardDisplacement;
-       position += lateralDisplacement;
+       position += rightDisplacement;
+       position += upDisplacement;
 
        //Save the new position
        XMStoreFloat3(&m_cameraPosition, position);
 
-       XMVECTOR cTarg = position + direction;
-       tmpMat = XMMatrixLookAtLH(position, cTarg, up);
+       XMVECTOR cTarg = position + camForward;
+       tmpMat = XMMatrixLookAtLH(position, cTarg, camUp);
        XMStoreFloat4x4(&m_cameraViewMat, tmpMat);
    }
 
@@ -448,6 +453,92 @@ namespace GAL
            WaitForSingleObject(waitEvent, INFINITE);
        }
    }
+    
+   /////////////////////    IInputListener Start
+   void RendererD3D12::OnMoveForward(float value, bool isDiscrete)
+   {
+       if (!isDiscrete)
+       {
+           m_cameraInput.z = value;
+           return;
+       }
+
+       XMVECTOR camForward = XMLoadFloat3(&m_cameraForward);
+       XMVECTOR position = XMLoadFloat3(&m_cameraPosition);
+       position += camForward * value;
+       XMStoreFloat3(&m_cameraPosition, position);
+   }
+
+   void RendererD3D12::OnMoveRight(float value, bool isDiscrete)
+   {
+       if (!isDiscrete)
+       {
+           m_cameraInput.x = value;
+           return;
+       }
+
+       XMVECTOR camForward = XMLoadFloat3(&m_cameraForward);
+       XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+       XMVECTOR camRight = XMVector3Cross(camUp, camForward);
+       camRight = XMVector3Normalize(camRight);
+
+       XMVECTOR position = XMLoadFloat3(&m_cameraPosition);
+       position += camRight * value;
+       XMStoreFloat3(&m_cameraPosition, position);
+   }
+   
+   void RendererD3D12::OnMoveUp(float value, bool isDiscrete)
+   {
+       if (!isDiscrete)
+       {
+           m_cameraInput.y = value;
+           return;
+       }
+
+       XMVECTOR camForward = XMLoadFloat3(&m_cameraForward);
+       XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+       XMVECTOR camRight = XMVector3Cross(camUp, camForward);
+       camRight = XMVector3Normalize(camRight);
+
+       camUp = XMVector3Cross(camForward, camRight);
+       camUp = XMVector3Normalize(camUp);
+
+       XMVECTOR position = XMLoadFloat3(&m_cameraPosition);
+       position += camUp * value;
+       XMStoreFloat3(&m_cameraPosition, position);
+   }
+
+   void RendererD3D12::OnMoveYawPitch(float yaw, float pitch)
+   {
+       // Calculate how much to move in the current camera direction.
+       XMVECTOR camForward = XMLoadFloat3(&m_cameraForward);
+       XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+       
+       XMVECTOR camRight = XMVector3Cross(camUp, camForward);
+       camRight = XMVector3Normalize(camRight);
+       
+       camUp = XMVector3Cross(camForward, camRight);
+       camUp = XMVector3Normalize(camUp);
+
+       float yawAngle = yaw * 3.14159f;
+       XMMATRIX matYaw = XMMatrixRotationAxis(camUp, yawAngle);
+
+       float pitchAngle = pitch * 3.14159f;
+       XMMATRIX matPitch = XMMatrixRotationAxis(camRight, pitchAngle);
+
+       XMMATRIX finalMat = matYaw * matPitch;
+
+       XMVECTOR newForward = XMVector3Transform(camForward,
+           finalMat);
+    
+       //Save the new forward vector.
+       XMStoreFloat3(&m_cameraForward, newForward);
+   }
+
+   /////////////////////    IInputListener End
+
 
    void RendererD3D12::PreRender()
    {

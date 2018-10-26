@@ -1,16 +1,9 @@
 #pragma once
 
 
-#include <stdint.h>
-#include <vector>
-#include <memory>
-using namespace std;
 
-#include <dxgi1_4.h>
-#include <d3d12.h>
-#include <DirectXMath.h>
+using namespace std;
 using namespace DirectX;
-#include <wrl/client.h>
 
 #include "ConstantBufferPool.hpp"
 #include "InputManager.h"

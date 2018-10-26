@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 union SDL_Event;
 struct SDL_KeyboardEvent;
 struct SDL_MouseMotionEvent;

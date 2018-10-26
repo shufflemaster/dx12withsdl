@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "D3dx12.h"
 
 #include "LogUtils.h"
 #include "RendererD3D12.h"

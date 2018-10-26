@@ -1,8 +1,7 @@
 #include "pch.h"
+
 #include "RenderNode.h"
 #include "VertexTypes.h"
-
-#include "d3dx12.h"
 #include "LogUtils.h"
 #include "RendererD3D12.h"
 

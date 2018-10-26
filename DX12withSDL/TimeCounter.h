@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Windows.h>
-
 namespace GAL {
 
     class TimeCounter
@@ -10,7 +8,11 @@ namespace GAL {
 
         TimeCounter()
         {
-            QueryPerformanceFrequency(&m_frequency);
+            LARGE_INTEGER frequency;
+            QueryPerformanceFrequency(&frequency);
+            m_periodMillis = 1000.0 / frequency.QuadPart;
+            m_periodMicros = 1000000.0 / frequency.QuadPart;
+            m_periodNanos = 1000000000.0 / frequency.QuadPart;
         }
 
         ~TimeCounter()
@@ -35,25 +37,16 @@ namespace GAL {
 
             if (timeMicros)
             {
-                LARGE_INTEGER elapsedUS;
-                elapsedUS.QuadPart = tickCount.QuadPart * 1000000;
-                elapsedUS.QuadPart /= m_frequency.QuadPart;
-                *timeMicros = (double)elapsedUS.QuadPart;
+                *timeMicros = m_periodMicros * tickCount.QuadPart;
             }
 
             if (timeNanos)
             {
-                LARGE_INTEGER elapsedNS;
-                elapsedNS.QuadPart = tickCount.QuadPart * 1000000000;
-                elapsedNS.QuadPart /= m_frequency.QuadPart;
-                *timeNanos = (double)elapsedNS.QuadPart;
+                *timeNanos = m_periodNanos * tickCount.QuadPart;
             }
 
-            LARGE_INTEGER elapsedMS;
-            elapsedMS.QuadPart = tickCount.QuadPart * 1000;
-            elapsedMS.QuadPart /= m_frequency.QuadPart;
-            
-            return (double)elapsedMS.QuadPart;
+            double retValMillis = m_periodMillis * tickCount.QuadPart;
+            return retValMillis;
         }
 
         //Read delta time since last call to readDeltaTimeMillis() was called.
@@ -64,34 +57,27 @@ namespace GAL {
 
             LARGE_INTEGER tickCount;
             tickCount.QuadPart = currentTime.QuadPart - m_previousTime.QuadPart;
-            m_previousTime = currentTime;
+            m_previousTime.QuadPart = currentTime.QuadPart;
 
             if (deltaTimeMicros)
             {
-                LARGE_INTEGER elapsedUS;
-                elapsedUS.QuadPart = tickCount.QuadPart * 1000000;
-                elapsedUS.QuadPart /= m_frequency.QuadPart;
-                *deltaTimeMicros = (double)elapsedUS.QuadPart;
+                *deltaTimeMicros = m_periodMicros * tickCount.QuadPart;
             }
 
             if (deltaTimeNanos)
             {
-                LARGE_INTEGER elapsedNS;
-                elapsedNS.QuadPart = tickCount.QuadPart * 1000000000;
-                elapsedNS.QuadPart /= m_frequency.QuadPart;
-                *deltaTimeNanos = (double)elapsedNS.QuadPart;
+                *deltaTimeNanos = m_periodNanos * tickCount.QuadPart;
             }
 
-            LARGE_INTEGER elapsedMS;
-            elapsedMS.QuadPart = tickCount.QuadPart * 1000;
-            elapsedMS.QuadPart /= m_frequency.QuadPart;
-
-            return (double)elapsedMS.QuadPart;
+            double retValMillis = m_periodMillis * tickCount.QuadPart;
+            return retValMillis;
         }
 
     private:
-        LARGE_INTEGER m_frequency;
+        double m_periodMillis;
+        double m_periodMicros;
+        double m_periodNanos;
         LARGE_INTEGER m_startingTime, m_previousTime;
     };
 
-}
+};

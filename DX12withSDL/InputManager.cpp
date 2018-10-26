@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "InputManager.h"
 
-#include <SDL.h>
-
 namespace GAL
 {
     InputManager InputManager::s_inputManager;
@@ -48,7 +46,16 @@ namespace GAL
 
     void InputManager::ProcessKeyboardEvent(const SDL_KeyboardEvent& kbdEvent)
     {
-        float value = (kbdEvent.type == SDL_KEYDOWN) ? 1.0f : 0.0f;
+        float value;
+        if (kbdEvent.type == SDL_KEYDOWN)
+        {
+            value = 1.0f;
+        }
+        else
+        {
+            value = 0.0f;
+        }
+
         switch (kbdEvent.keysym.sym)
         {
         case SDLK_w:

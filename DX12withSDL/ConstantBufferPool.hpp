@@ -1,8 +1,6 @@
 #pragma once
 
-#include <d3d12.h>
-#include "D3dx12.h"
-#include <wrl/client.h>
+
 using Microsoft::WRL::ComPtr;
 
 #include "LogUtils.h"

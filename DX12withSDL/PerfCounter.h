@@ -1,9 +1,5 @@
 #pragma once
 
-#include <Windows.h>
-#include <iostream>
-#include <sstream>
-
 #include "LogUtils.h"
 
 using namespace std;
@@ -16,7 +12,12 @@ namespace GAL {
 
         PerfCounter()
         {
-            QueryPerformanceFrequency(&mFrequency);
+            LARGE_INTEGER frequency;
+            QueryPerformanceFrequency(&frequency);
+            m_periodSeconds = 1.0 / frequency.QuadPart;
+            m_periodMillis = 1000.0 / frequency.QuadPart;
+            m_periodMicros = 1000000.0 / frequency.QuadPart;
+            m_periodNanos = 1000000000.0 / frequency.QuadPart;
         }
 
         ~PerfCounter()
@@ -34,31 +35,34 @@ namespace GAL {
             calc();
         }
 
+        double getElapsedSeconds() const { return mElapsedSeconds; }
+        double getElapsedMS() const { return mElapsedMS; }
         double getElapsedUS() const { return mElapsedUS; }
         double getElapsedNS() const { return mElapsedNS; }
 
         void dump(int loopCnt, ostream& os) const {
-            os << "Frequency:" << mFrequency.QuadPart << ", start:" << mStartingTime.QuadPart << ", end:" << mEndingTime.QuadPart << endl;
+            os << "Frequency:" << 1.0/ m_periodSeconds << "Period:" << m_periodSeconds << ", start:" << mStartingTime.QuadPart << ", end:" << mEndingTime.QuadPart << endl;
             LARGE_INTEGER tickCount;
             tickCount.QuadPart = mEndingTime.QuadPart - mStartingTime.QuadPart;
-            LARGE_INTEGER elapsedUS, elapsedNS;
-            elapsedUS.QuadPart = tickCount.QuadPart * 1000000;
-            elapsedUS.QuadPart /= mFrequency.QuadPart;
-            elapsedNS.QuadPart = tickCount.QuadPart * 1000000000;
-            elapsedNS.QuadPart /= mFrequency.QuadPart;
 
-            os << "tick count:" << tickCount.QuadPart << ", us:" << elapsedUS.QuadPart << ", ns:" << elapsedNS.QuadPart << endl;
+            double elapsedSeconds, elapsedMS, elapsedUS, elapsedNS;
+            elapsedSeconds = m_periodSeconds * tickCount.QuadPart;
+            elapsedMS = m_periodMillis * tickCount.QuadPart;
+            elapsedUS = m_periodMicros * tickCount.QuadPart;
+            elapsedNS = m_periodNanos * tickCount.QuadPart;
 
-            double us_per_loop = (double)elapsedUS.QuadPart;
-            us_per_loop /= loopCnt;
+            os << "tick count:" << tickCount.QuadPart << ", secs:" << elapsedSeconds << ", ms:" << elapsedMS << ", us:" << elapsedUS << ", ns:" << elapsedNS << endl;
 
-            double ns_per_loop = (double)elapsedNS.QuadPart;
-            ns_per_loop /= loopCnt;
+            double secs_per_loop = elapsedSeconds / loopCnt;
+            double ms_per_loop = elapsedMS / loopCnt;
+            double us_per_loop = elapsedUS / loopCnt;
+            double ns_per_loop = elapsedNS / loopCnt;
+
 
             double ticks_per_loop = (double)tickCount.QuadPart;
             ticks_per_loop /= loopCnt;
 
-            os << "ticks/loop:" << ticks_per_loop << ", us/loop:" << us_per_loop << ", ns/loop:" << ns_per_loop << endl;
+            os << "ticks/loop:" << ticks_per_loop << ", secs/loop:" << secs_per_loop << ", ms/loop:" << ms_per_loop << ", us/loop:" << us_per_loop << ", ns/loop:" << ns_per_loop << endl;
         }
 
         void dump(int loopCnt, FILE* fp) const {
@@ -75,8 +79,13 @@ namespace GAL {
         }
 
     private:
-        LARGE_INTEGER mFrequency;
+        double m_periodSeconds;
+        double m_periodMillis;
+        double m_periodMicros;
+        double m_periodNanos;
         LARGE_INTEGER mStartingTime, mEndingTime;
+        double mElapsedSeconds;
+        double mElapsedMS;
         double mElapsedUS;
         double mElapsedNS;
         double mTickCnt;
@@ -84,14 +93,10 @@ namespace GAL {
         void calc() {
             LARGE_INTEGER tickCount;
             tickCount.QuadPart = mEndingTime.QuadPart - mStartingTime.QuadPart;
-            LARGE_INTEGER elapsedUS, elapsedNS;
-            elapsedUS.QuadPart = tickCount.QuadPart * 1000000;
-            elapsedUS.QuadPart /= mFrequency.QuadPart;
-            elapsedNS.QuadPart = tickCount.QuadPart * 1000000000;
-            elapsedNS.QuadPart /= mFrequency.QuadPart;
-
-            mElapsedUS = (double)elapsedUS.QuadPart;
-            mElapsedNS = (double)elapsedNS.QuadPart;
+            mElapsedSeconds = m_periodSeconds * tickCount.QuadPart;
+            mElapsedMS = m_periodMillis * tickCount.QuadPart;
+            mElapsedUS = m_periodMicros * tickCount.QuadPart;
+            mElapsedNS = m_periodNanos * tickCount.QuadPart;
             mTickCnt = (double)tickCount.QuadPart;
         }
     };

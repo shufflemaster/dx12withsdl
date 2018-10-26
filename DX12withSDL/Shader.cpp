@@ -1,5 +1,4 @@
 #include "pch.h"
-#include <d3dcompiler.h>
 
 #include "Shader.h"
 

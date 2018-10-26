@@ -1,10 +1,6 @@
 // Include standard headers
 #include "pch.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <Windows.h>
-
 #include "LogUtils.h"
 
 namespace GAL {

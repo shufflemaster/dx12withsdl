@@ -17,13 +17,6 @@
 //------------------------------------------------------------------------------------------------------------------------------
 #pragma once
 
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#include <stdint.h>
-#include <assert.h>
-#include <algorithm>
-#include <memory>
-
 #include "helpers.h"
 
 #pragma pack(push,1)

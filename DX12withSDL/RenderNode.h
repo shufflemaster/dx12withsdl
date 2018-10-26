@@ -1,13 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-
-#include <memory>
 using namespace std;
 
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#include <DirectXMath.h>
 using namespace DirectX;
 
 #include "Shader.h"

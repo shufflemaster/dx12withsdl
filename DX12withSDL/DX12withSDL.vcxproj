@@ -106,7 +106,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
@@ -150,7 +150,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>

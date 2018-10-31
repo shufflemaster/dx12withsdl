@@ -2,7 +2,8 @@
 
 namespace GAL
 {
-    class ResourceCache<ResourceType>;
+    template<typename ResourceType>
+    class ResourceCache;
 
     //-------------------------------------------------------------------------
     // The Resource class.
@@ -18,13 +19,13 @@ namespace GAL
         // m_handle starts invalid, but eventually ResourceCache will give it a value.
         //-------------------------------------------------------------------------
         ResourceBase(const std::string& filename) :
-            m_handle(-1), m_filename(name)
+            m_handle(-1), m_filename(filename)
         {
         }
 
     public:
         ResourceBase() = delete;
-        ResourceBase(const Resource &) = delete;
+        ResourceBase(const ResourceBase &) = delete;
         ResourceBase(ResourceBase &&) noexcept = default;
 
 
@@ -39,7 +40,7 @@ namespace GAL
         //-------------------------------------------------------------------------
         // Returns the handle of the resource.
         //-------------------------------------------------------------------------
-        Handle GetHandle()
+        ResourceHandle GetHandle()
         {
             return m_handle;
         }

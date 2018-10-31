@@ -1,13 +1,14 @@
 #include "pch.h"
+
+#include "..\ResourceTypes\Mesh.h"
 #include "TriangleMeshLoader.h"
 #include "VertexTypes.h"
-#include "Mesh.h"
 
 namespace GAL
 {
-    std::shared_ptr<Mesh> TriangleMeshLoader::load(float size, float red, float green, float blue) const
+    std::shared_ptr<Mesh> TriangleMeshLoader::Load(const std::string& filename, float size, float red, float green, float blue) const
     {
-        std::shared_ptr<Mesh> retMesh = std::make_shared<Mesh>();
+        std::shared_ptr<Mesh> retMesh = std::make_shared<Mesh>(filename);
 
         retMesh->Allocate(3, 3);
         

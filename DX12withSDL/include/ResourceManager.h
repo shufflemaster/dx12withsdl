@@ -1,10 +1,11 @@
 #pragma once
 
+#include "ResourceCache.hpp"
+#include "ResourceTypes\Mesh.h"
+
 namespace GAL
 {
-    class Mesh;
-    
-    using MeshCache = entt::resource_cache<Mesh>;
+    using MeshCache = ResourceCache<Mesh>;
 
     class ResourceManager
     {
@@ -12,10 +13,10 @@ namespace GAL
         ResourceManager();
         ~ResourceManager();
 
-        static MeshCache& GetMeshCache() { return m_meshCache; }
+        MeshCache& GetMeshCache() { return m_meshCache; }
 
     private:
-        static MeshCache m_meshCache;
+        MeshCache m_meshCache;
     };
 }; //namespace GAL
 

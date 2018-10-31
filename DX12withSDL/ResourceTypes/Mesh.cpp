@@ -5,7 +5,7 @@
 
 namespace GAL
 {
-    Mesh::Mesh()
+    Mesh::Mesh(const std::string& filename) : ResourceBase(filename)
     {
     }
 

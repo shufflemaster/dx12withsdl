@@ -1,13 +1,16 @@
 #pragma once
 
 #include "Systems\System.h"
-#include "ResourceManager.h"
 
 namespace GAL
 {
+    class ResourceManager;
+
     class Universe
     {
     public:
+        Universe() = default;
+
         ~Universe()
         {
             for (auto system : m_systems)
@@ -53,7 +56,7 @@ namespace GAL
 
         Registry& GetRegistry()
         {
-            return &m_registry;
+            return m_registry;
         }
 
         ResourceManager& GetResourceManager()

@@ -2,18 +2,16 @@
 
 namespace GAL
 {
-    class Mesh;
-
     class MeshComponent
     {
     public:
-        MeshComponent();
+        MeshComponent() : m_meshHandle(-1) {}
         ~MeshComponent();
 
-        std::string m_meshName; //Resource Filename
+        //Defined at design time.
+        std::string m_filename;
 
-        //To get the resource (Mesh*)
-        //Mesh* m = GAL::ResourceManager::GetMeshCache().handle(m_meshId).get()
-        entt::hashed_string::hash_type m_meshId;
+        //Assigned realtime from the ResourceManager::MeshCache
+        ResourceHandle m_meshHandle;
     };
 }; //namespace GAL

@@ -2,6 +2,7 @@
 
 namespace GAL
 {
+    template<typename ResourceType>
     class ResourceCache;
 
     template<typename Loader, typename ResourceType>

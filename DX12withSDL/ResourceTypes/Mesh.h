@@ -1,14 +1,19 @@
 #pragma once
+
+#include "ResourceBase.hpp"
+
 namespace GAL
 {
     struct P3F_C4F;
 
-    class Mesh
+    class Mesh : public ResourceBase<Mesh>
     {
         friend class TriangleMeshLoader;
 
     public:
-        Mesh();
+        Mesh(const std::string& filename);
+        Mesh() = delete;
+        Mesh(const Mesh&) = delete;
         Mesh(Mesh&& other);
         ~Mesh();
 

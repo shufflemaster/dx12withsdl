@@ -10,8 +10,7 @@ namespace GAL
     {
     public:
         TriangleMeshLoader() = default;
-        std::shared_ptr<Mesh> load(float size, float red, float green, float blue) const;
-
+        std::shared_ptr<Mesh> Load(const std::string& filename, float size, float red, float green, float blue) const;
     };
 } //namespace GAL;
 

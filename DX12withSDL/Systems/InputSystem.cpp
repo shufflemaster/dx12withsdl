@@ -1,7 +1,8 @@
 #include "pch.h"
 
+#include "Universe.h"
 #include "InputSystem.h"
-#include "InputComponent.h"
+#include "..\Components\InputComponent.h"
 
 namespace GAL
 {
@@ -60,28 +61,62 @@ namespace GAL
         switch (kbdEvent.keysym.sym)
         {
         case SDLK_w:
+            inputName = InputComponent::eInputName::KEYBOARD_W;
+            break;
         case SDLK_UP:
-            for (auto listener : m_listeners) listener->OnMoveForward(value);
+            inputName = InputComponent::eInputName::KEYBOARD_UP;
             break;
         case SDLK_s:
+            inputName = InputComponent::eInputName::KEYBOARD_S;
+            break;
         case SDLK_DOWN:
-            for (auto listener : m_listeners) listener->OnMoveForward(-value);
+            inputName = InputComponent::eInputName::KEYBOARD_DOWN;
             break;
         case SDLK_a:
+            inputName = InputComponent::eInputName::KEYBOARD_A;
+            break;
         case SDLK_LEFT:
-            for (auto listener : m_listeners) listener->OnMoveRight(-value);
+            inputName = InputComponent::eInputName::KEYBOARD_LEFT;
             break;
         case SDLK_d:
+            inputName = InputComponent::eInputName::KEYBOARD_D;
+            break;
         case SDLK_RIGHT:
-            for (auto listener : m_listeners) listener->OnMoveRight(value);
+            inputName = InputComponent::eInputName::KEYBOARD_RIGHT;
             break;
         case SDLK_q:
-            for (auto listener : m_listeners) listener->OnMoveUp(-value);
+            inputName = InputComponent::eInputName::KEYBOARD_Q;
             break;
         case SDLK_e:
-            for (auto listener : m_listeners) listener->OnMoveUp(value);
+            inputName = InputComponent::eInputName::KEYBOARD_E;
             break;
+        default:
+            return; //Not supported key event.
         }
+
+        //Fetch the input components from the registry.
+        Registry& registry = m_universe->GetRegistry();
+
+        //Let's get a raw_view
+        auto raw = registry.raw_view<InputComponent>();
+        for (auto& inputComponent : raw)
+        {
+            auto itor = inputComponent.m_generators.find(inputName);
+            if (itor == inputComponent.m_generators.end())
+            {
+                continue;
+            }
+            InputComponent::Event* evt = &itor->second;
+            if (evt->m_deadZone > fabs(value))
+            {
+                //Skip the event because it is smaller than the deadzone.
+                continue;
+            }
+            float evtValue = value * evt->m_multiplier;
+            //Let's dispatch the event.
+
+        }
+
     }
 
     void InputSystem::ProcessMouseMotionEvent(const SDL_MouseMotionEvent& motionEvent)

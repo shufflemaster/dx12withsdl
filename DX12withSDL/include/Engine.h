@@ -4,7 +4,6 @@ namespace GAL
 {
     class Universe;
     class ResourceManager;
-
     class InputSystem;
 
     class Engine
@@ -15,7 +14,7 @@ namespace GAL
 
         //Blocking call, When it returns the game/simulation is finished.
         //returns 0 on success (no early termination).
-        int Run(HWND mainWindow);
+        int Run(HWND hWnd);
 
     private:
         Universe m_universe;
@@ -29,7 +28,7 @@ namespace GAL
         //in levelName is null, loads a hard coded level.
         bool LoadLevel(const char *levelName = nullptr);
 
-        bool CreateSystems();
+        bool CreateSystems(HWND hWnd);
     };
 
 }; //namespace GAL

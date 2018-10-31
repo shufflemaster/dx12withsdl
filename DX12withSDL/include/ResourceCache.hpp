@@ -4,6 +4,7 @@
 
 namespace GAL
 {
+    template<typename ResourceType>
     class ResourceBase;
 
     //-----------------------------------------------------------------------------
@@ -29,10 +30,10 @@ namespace GAL
         template<typename Loader, typename... Args>
         ResourceHandle AddResource(const std::string& name, Args &&... args) {
             static_assert(std::is_base_of_v<ResourceLoader<Loader, ResourceType>, Loader>);
-            static_assert(std::is_base_of_v<ResourceBase, ResourceType>);
+            static_assert(std::is_base_of_v<ResourceBase<ResourceType>, ResourceType>);
 
             //Do we have already a resource with such name?
-            auto itor = m_nameToHandle.find(name)
+            auto itor = m_nameToHandle.find(name);
             if (itor != m_nameToHandle.end())
             {
                 //Already exists
@@ -47,13 +48,13 @@ namespace GAL
 
             //Find the next available Handle
             bool handleAvailable = !m_handles.empty();
-            Resource::Handle handle;
+            ResourceHandle handle;
             if (handleAvailable)
             {
                 handle = m_handles.top();
                 m_handles.pop();
             }
-            else handle = m_collection.size();
+            else handle = static_cast<ResourceHandle>(m_collection.size());
 
             //Add the resource to the manager. If there is an available handle, then 
             //we store the resource using the handle. Otherwise we add it to the vector.

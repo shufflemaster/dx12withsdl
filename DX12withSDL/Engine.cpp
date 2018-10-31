@@ -5,13 +5,14 @@
 #include "RendererD3D12.h"
 #include "VertexTypes.h"
 #include "RenderNode.h"
-#include "ResourceManager.h"
 #include "Components\MeshComponent.h"
 #include "Components\TransformComponent.h"
 #include "HashedString.h"
 
-#include "Universe.h"
 #include "Engine.h"
+#include "ResourceManager.h"
+#include "Universe.h"
+
 #include "Systems\InputSystem.h"
 #include "ResourceLoaders\TriangleMeshLoader.h"
 
@@ -47,28 +48,23 @@ namespace GAL
     {
     }
 
-    int Engine::Run(HWND mainWindow)
+    int Engine::Run(HWND hWnd)
     {
         if (!LoadLevel())
         {
             return -1;
         }
 
-        if (!CreateSystems())
+        if (!CreateSystems(hWnd))
         {
             return -1;
         }
 
         GAL::RendererD3D12& renderer = GAL::RendererD3D12::GetRenderer();
-        if (!renderer.Init(g_hWnd)) {
+        if (!renderer.Init(hWnd)) {
             ODERROR("Failed to initialize the renderer");
             return -1;
         }
-
-
-
-        GAL::InputManager::Instance().Init(g_hWnd);
-        GAL::InputManager::Instance().AddListener(&renderer);
 
         float deltaTimeMilis = 0.0f;
         unsigned int frameCnt = 0;
@@ -83,7 +79,7 @@ namespace GAL
             SDL_Event windowEvent;
             if (SDL_PollEvent(&windowEvent)) {
                 if (windowEvent.type == SDL_QUIT) break;
-                GAL::InputManager::Instance().ProcessEvent(windowEvent);
+                m_inputSystem->ProcessEvent(windowEvent);
             }
 
             deltaTimeMilis = (float)timerCounter.readDeltaTimeMillis();
@@ -104,7 +100,7 @@ namespace GAL
         return 0;
     }
 
-    bool Engine::LoadLevel(const char *levelName = nullptr)
+    bool Engine::LoadLevel(const char *levelName)
     {
         //We don't support loading levels by name, yet.
         assert(levelname == nullptr);
@@ -113,8 +109,8 @@ namespace GAL
         srand(666);
 
 
-        GAL::MeshCache& meshCache = GAL::ResourceManager::GetMeshCache();
-        GAL::Registry& registry = GAL::Engine::Instance().GetRegistry();
+        MeshCache& meshCache = m_universe.GetResourceManager().GetMeshCache();
+        Registry& registry = m_universe.GetRegistry();
 
         //Create all the triangle entities.
         const int kMaxTriangles = 1000;
@@ -122,31 +118,25 @@ namespace GAL
         std::string meshResourceName;
         for (int i = 0; i < kMaxTriangles; i++)
         {
-            //Create the mesh resource
+            auto newEntity = m_universe.CreteEntity();
+
+            //Create the mesh component
             meshResourceNameStream << "assets/mesh/triangle" << i;
-            meshResourceName = meshResourceNameStream.str();
-            HashedString meshResId(meshResourceName);
+            MeshComponent& meshComponent = registry.assign<MeshComponent>(newEntity);
+            meshComponent.m_filename = meshResourceNameStream.str();
 
             float rndRed = randFloat(0.2f, 1.0f);
             float rndGreen = randFloat(0.2f, 1.0f);
             float rndBlue = randFloat(0.2f, 1.0f);
-            if (!meshCache.load<GAL::TriangleMeshLoader>(meshResId.GetHash(), 0.5f, rndRed, rndGreen, rndBlue))
+            meshComponent.m_meshHandle = meshCache.AddResource<TriangleMeshLoader>(meshComponent.m_filename, 0.5f, rndRed, rndGreen, rndBlue);
+            if (meshComponent.m_meshHandle < 0)
             {
                 ODERROR("Failed to create mesh for triangle %d", i);
-                return;
+                return false;
             }
 
-            auto meshResHandle = meshCache.handle(meshResId.GetHash());
-
-            auto newEntity = registry.create();
-
-            //Add the mesh component.
-            GAL::MeshComponent& meshComponent = registry.assign<GAL::MeshComponent>(newEntity);
-            meshComponent.m_meshName = meshResourceName;
-            meshComponent.m_meshId = meshResId;
-
             //Add the transform component
-            GAL::TransformComponent& transformComponent = registry.assign<GAL::TransformComponent>(newEntity);
+            TransformComponent& transformComponent = registry.assign<TransformComponent>(newEntity);
             ::GenerateRandomWorldMatrix(transformComponent.m_matrix, -5.0f, 5.0f, -5.0f, 5.0f, 5.0f, 10.0f);
         }
 
@@ -158,10 +148,11 @@ namespace GAL
         //renderer.AddRenderNode(node);
     }
 
-    bool Engine::CreateSystems()
+    bool Engine::CreateSystems(HWND hWnd)
     {
-        m_inputSystem = m_universe.CreateAndAddSystem<InputSystem>();
+        m_inputSystem = static_cast<InputSystem*>(m_universe.CreateAndAddSystem<InputSystem>(hWnd));
 
+        return true;
     }
 
 } //namespace GAL

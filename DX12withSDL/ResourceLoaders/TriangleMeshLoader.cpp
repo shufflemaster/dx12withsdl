@@ -5,15 +5,6 @@
 
 namespace GAL
 {
-    TriangleMeshLoader::TriangleMeshLoader()
-    {
-    }
-
-
-    TriangleMeshLoader::~TriangleMeshLoader()
-    {
-    }
-
     std::shared_ptr<Mesh> TriangleMeshLoader::load(float size, float red, float green, float blue) const
     {
         std::shared_ptr<Mesh> retMesh = std::make_shared<Mesh>();

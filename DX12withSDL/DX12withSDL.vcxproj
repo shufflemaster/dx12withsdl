@@ -106,7 +106,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -152,7 +152,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -171,33 +171,40 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ConstantBufferPool.hpp" />
-    <ClInclude Include="ecs_typedefs.h" />
-    <ClInclude Include="Engine.h" />
-    <ClInclude Include="InputManager.h" />
-    <ClInclude Include="LogUtils.h" />
-    <ClInclude Include="Mesh.h" />
-    <ClInclude Include="MeshComponent.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="PerfCounter.h" />
-    <ClInclude Include="RendererD3D12.h" />
-    <ClInclude Include="RenderNode.h" />
-    <ClInclude Include="ResourceManager.h" />
-    <ClInclude Include="Shader.h" />
-    <ClInclude Include="System.h" />
-    <ClInclude Include="textureloader.h" />
-    <ClInclude Include="TimeCounter.h" />
-    <ClInclude Include="TransformComponent.h" />
-    <ClInclude Include="TriangleMeshLoader.h" />
-    <ClInclude Include="Universe.h" />
-    <ClInclude Include="VertexTypes.h" />
+    <ClInclude Include="Components\InputComponent.h" />
+    <ClInclude Include="Components\MeshComponent.h" />
+    <ClInclude Include="Components\TransformComponent.h" />
+    <ClInclude Include="include\ConstantBufferPool.hpp" />
+    <ClInclude Include="include\d3dx12.h" />
+    <ClInclude Include="include\ecs_typedefs.h" />
+    <ClInclude Include="include\Engine.h" />
+    <ClInclude Include="include\HashedString.h" />
+    <ClInclude Include="include\helpers.h" />
+    <ClInclude Include="include\LogUtils.h" />
+    <ClInclude Include="include\pch.h" />
+    <ClInclude Include="include\PerfCounter.h" />
+    <ClInclude Include="include\RendererD3D12.h" />
+    <ClInclude Include="include\RenderNode.h" />
+    <ClInclude Include="include\ResourceBase.hpp" />
+    <ClInclude Include="include\ResourceCache.hpp" />
+    <ClInclude Include="include\ResourceLoader.hpp" />
+    <ClInclude Include="include\ResourceManager.h" />
+    <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\textureloader.h" />
+    <ClInclude Include="include\TimeCounter.h" />
+    <ClInclude Include="include\Universe.h" />
+    <ClInclude Include="include\VertexTypes.h" />
+    <ClInclude Include="ResourceLoaders\TriangleMeshLoader.h" />
+    <ClInclude Include="ResourceTypes\Mesh.h" />
+    <ClInclude Include="Systems\InputSystem.h" />
+    <ClInclude Include="Systems\System.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Components\InputComponent.cpp" />
+    <ClCompile Include="Components\MeshComponent.cpp" />
+    <ClCompile Include="Components\TransformComponent.cpp" />
     <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="MeshComponent.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -207,10 +214,11 @@
     <ClCompile Include="LogUtils.cpp" />
     <ClCompile Include="RendererD3D12.cpp" />
     <ClCompile Include="RenderNode.cpp" />
+    <ClCompile Include="ResourceLoaders\TriangleMeshLoader.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="ResourceTypes\Mesh.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="TransformComponent.cpp" />
-    <ClCompile Include="TriangleMeshLoader.cpp" />
+    <ClCompile Include="Systems\InputSystem.cpp" />
     <ClCompile Include="Universe.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

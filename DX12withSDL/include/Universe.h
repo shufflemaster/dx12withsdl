@@ -1,6 +1,7 @@
 #pragma once
 
-#include "System.h"
+#include "Systems\System.h"
+#include "ResourceManager.h"
 
 namespace GAL
 {
@@ -17,18 +18,18 @@ namespace GAL
 
         //The order of calling methods is as follow.
 
-        template<typename T>
-        System* CreateAndAddSystem()
+        template<typename T, typename... Args>
+        System* CreateAndAddSystem(Args &&... args)
         {
-            System* newSys = new T();
-            m_systems.push_back(new T());
+            System* newSys = new T(this, std::forward<Args>(args)...);
+            m_systems.push_back(newSys);
         }
 
         void InitializeSystems()
         {
             for (auto system : m_systems)
             {
-                system->Initialize(this);
+                system->Initialize();
             }
         }
 
@@ -45,20 +46,25 @@ namespace GAL
             return m_registry.create();
         }
 
-        EntityId DestroyEntity()
+        void DestroyEntity(EntityId entity)
         {
-            return m_registry.create();
+            m_registry.destroy(entity);
         }
 
-        Registry* GetRegistry()
+        Registry& GetRegistry()
         {
             return &m_registry;
         }
 
+        ResourceManager& GetResourceManager()
+        {
+            return m_resourceManager;
+        }
 
     private:
-        std::vector<System*> m_systems;
         Registry m_registry;
+        ResourceManager m_resourceManager;
+        std::vector<System*> m_systems;
     };
 
 }; //namespace GAL

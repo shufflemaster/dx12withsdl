@@ -1,29 +1,28 @@
 #include "pch.h"
-#include "InputManager.h"
+
+#include "InputSystem.h"
+#include "InputComponent.h"
 
 namespace GAL
 {
-    InputManager InputManager::s_inputManager;
-
-    InputManager::InputManager() : m_windowWidth(0), m_windowHeight(0)
-    {
-    }
-
-
-    InputManager::~InputManager()
-    {
-    }
-
-    void InputManager::Init(HWND hWnd)
+    InputSystem::InputSystem(Universe* universe, HWND hWnd) : System(universe)
     {
         //get the client window area size.
         RECT clientSize;;
         GetClientRect(hWnd, &clientSize);
         m_windowWidth = clientSize.right;
         m_windowHeight = clientSize.bottom;
+
+
+        m_wantsUpdate = false;
     }
 
-    void InputManager::ProcessEvent(const SDL_Event& windowEvent)
+
+    InputSystem::~InputSystem()
+    {
+    }
+
+    void InputSystem::ProcessEvent(const SDL_Event& windowEvent)
     {
         switch (windowEvent.type)
         {
@@ -44,7 +43,7 @@ namespace GAL
         }
     }
 
-    void InputManager::ProcessKeyboardEvent(const SDL_KeyboardEvent& kbdEvent)
+    void InputSystem::ProcessKeyboardEvent(const SDL_KeyboardEvent& kbdEvent)
     {
         float value;
         if (kbdEvent.type == SDL_KEYDOWN)
@@ -55,6 +54,8 @@ namespace GAL
         {
             value = 0.0f;
         }
+
+        InputComponent::eInputName inputName = InputComponent::eInputName::UNKNOWN;
 
         switch (kbdEvent.keysym.sym)
         {
@@ -83,7 +84,7 @@ namespace GAL
         }
     }
 
-    void InputManager::ProcessMouseMotionEvent(const SDL_MouseMotionEvent& motionEvent)
+    void InputSystem::ProcessMouseMotionEvent(const SDL_MouseMotionEvent& motionEvent)
     {
         bool isMiddleButtonPressed = motionEvent.state & SDL_BUTTON(SDL_BUTTON_MIDDLE);
         if (isMiddleButtonPressed)
@@ -106,19 +107,14 @@ namespace GAL
         for (auto listener : m_listeners) listener->OnMoveYawPitch(mouseDeltaX, mouseDeltaY);
     }
 
-    void InputManager::ProcessMouseButtonEvent(const SDL_MouseButtonEvent& buttonEvent)
+    void InputSystem::ProcessMouseButtonEvent(const SDL_MouseButtonEvent& buttonEvent)
     {
 
     }
 
-    void InputManager::ProcessMouseWheelEvent(const SDL_MouseWheelEvent& wheelEvent)
+    void InputSystem::ProcessMouseWheelEvent(const SDL_MouseWheelEvent& wheelEvent)
     {
 
     }
 
-
-    void InputManager::AddListener(IInputListener* listener)
-    {
-        m_listeners.push_back(listener);
-    }
 } //namespace GAL

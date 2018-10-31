@@ -6,6 +6,8 @@ struct SDL_MouseMotionEvent;
 struct SDL_MouseButtonEvent;
 struct SDL_MouseWheelEvent;
 
+#include "System.h"
+
 namespace GAL
 {
     struct IInputListener
@@ -27,20 +29,21 @@ namespace GAL
         virtual void OnMoveYawPitch(float yaw, float pitch) {};
     };
 
-    class InputManager
+    class InputSystem : public System
     {
     public:
-        static InputManager& Instance() { return s_inputManager; }
+        InputSystem(Universe* universe, HWND hWnd);
 
-        void Init(HWND hWnd);
+        InputSystem() = delete;
+        InputSystem(const InputSystem&) = delete;
+        InputSystem(InputSystem&&) = delete;
+
+        void Update(Registry& /*registry*/, float /*deltaTime*/) override {};
         void ProcessEvent(const SDL_Event& windowEvent);
-        void AddListener(IInputListener* listener);
 
-        virtual ~InputManager();
+        virtual ~InputSystem();
 
     private:
-        InputManager();
-
         void ProcessKeyboardEvent(const SDL_KeyboardEvent& kbdEvent);
 
         //Mouse
@@ -48,10 +51,7 @@ namespace GAL
         void ProcessMouseButtonEvent(const SDL_MouseButtonEvent& buttonEvent);
         void ProcessMouseWheelEvent(const SDL_MouseWheelEvent& wheelEvent);
 
-        static InputManager s_inputManager;
-
         UINT m_windowWidth, m_windowHeight;
-        std::vector<IInputListener*> m_listeners;
     }; //class InputManager
 
 };//namespace GAL

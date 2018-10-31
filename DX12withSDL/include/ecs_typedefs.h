@@ -6,5 +6,5 @@ namespace GAL
 {
     using Registry = entt::registry<>;
     using EntityId = Registry::entity_type;
-    using ResourceId = entt::hashed_string::hash_type;
+    using ResourceHandle = int; //A negative value means invalid handle
 }

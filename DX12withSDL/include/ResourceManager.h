@@ -12,7 +12,6 @@ namespace GAL
         ResourceManager();
         ~ResourceManager();
 
-        static entt::hashed_string GetResourceId(const char * resourcePath) { return entt::hashed_string{ resourcePath }; }
         static MeshCache& GetMeshCache() { return m_meshCache; }
 
     private:

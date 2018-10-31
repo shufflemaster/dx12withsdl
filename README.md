@@ -28,3 +28,8 @@ frameCnt=14825 FPS=993.69
     */
 =========================================================
 
+ Notes on std::map vs std::unordered_map performace
+ See: YouTube video: C++Now 2018: You cando better than std::unordered_map by Malte Skarupke.
+ Published by BoostCon channel.
+ If you expect less than 400 keys use std::map
+ if you expect between 400 to 100000 use std::unordered::map

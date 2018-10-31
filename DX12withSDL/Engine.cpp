@@ -5,15 +5,15 @@
 #include "RendererD3D12.h"
 #include "VertexTypes.h"
 #include "RenderNode.h"
-#include "InputManager.h"
 #include "ResourceManager.h"
-#include "TriangleMeshLoader.h"
-#include "Engine.h"
-#include "Mesh.h"
-#include "MeshComponent.h"
-#include "TransformComponent.h"
+#include "Components\MeshComponent.h"
+#include "Components\TransformComponent.h"
+#include "HashedString.h"
 
+#include "Universe.h"
 #include "Engine.h"
+#include "Systems\InputSystem.h"
+#include "ResourceLoaders\TriangleMeshLoader.h"
 
 using namespace DirectX;
 
@@ -50,6 +50,11 @@ namespace GAL
     int Engine::Run(HWND mainWindow)
     {
         if (!LoadLevel())
+        {
+            return -1;
+        }
+
+        if (!CreateSystems())
         {
             return -1;
         }
@@ -120,18 +125,18 @@ namespace GAL
             //Create the mesh resource
             meshResourceNameStream << "assets/mesh/triangle" << i;
             meshResourceName = meshResourceNameStream.str();
-            auto meshResId = GAL::ResourceManager::GetResourceId(meshResourceName.c_str());
+            HashedString meshResId(meshResourceName);
 
             float rndRed = randFloat(0.2f, 1.0f);
             float rndGreen = randFloat(0.2f, 1.0f);
             float rndBlue = randFloat(0.2f, 1.0f);
-            if (!meshCache.load<GAL::TriangleMeshLoader>(meshResId, 0.5f, rndRed, rndGreen, rndBlue))
+            if (!meshCache.load<GAL::TriangleMeshLoader>(meshResId.GetHash(), 0.5f, rndRed, rndGreen, rndBlue))
             {
                 ODERROR("Failed to create mesh for triangle %d", i);
                 return;
             }
 
-            auto meshResHandle = meshCache.handle(meshResId);
+            auto meshResHandle = meshCache.handle(meshResId.GetHash());
 
             auto newEntity = registry.create();
 
@@ -151,6 +156,12 @@ namespace GAL
 
         //GAL::RenderNode* node = new GAL::RenderNode();
         //renderer.AddRenderNode(node);
+    }
+
+    bool Engine::CreateSystems()
+    {
+        m_inputSystem = m_universe.CreateAndAddSystem<InputSystem>();
+
     }
 
 } //namespace GAL

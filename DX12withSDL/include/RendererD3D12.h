@@ -6,7 +6,6 @@ using namespace std;
 using namespace DirectX;
 
 #include "ConstantBufferPool.hpp"
-#include "InputManager.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -20,7 +19,7 @@ namespace GAL
     };
 
     //FIXME! There's no reason for the Renderer to be an input listener
-    class RendererD3D12 : public IInputListener
+    class RendererD3D12
     {
     public:
         static  RendererD3D12& GetRenderer() { return s_renderer; }

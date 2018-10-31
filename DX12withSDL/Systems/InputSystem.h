@@ -12,6 +12,7 @@ namespace GAL
 {
     struct IInputListener
     {
+#if 0
         //value is between -1.0f and 1.0f;
         //if isDiscrete move by delta instead of speed.
         virtual void OnMoveForward(float value, bool isDiscrete = false) {};
@@ -27,6 +28,8 @@ namespace GAL
         //     moved the mouse all over the Y Screen dimension.
         //     pitch should be interpreted as a rotation across the 3D RIGHT axis.
         virtual void OnMoveYawPitch(float yaw, float pitch) {};
+#endif
+        virtual void OnInputEvent()
     };
 
     class InputSystem : public System

@@ -34,17 +34,22 @@ namespace GAL
 
         //When the event is triggered, it will convey the name as a string and the hashed version of the name
         //so the receiver/listener can switch using either.
-        struct Event
+        struct InputItem
         {
+            eInputName m_inputName;
             float m_multiplier; //Multiply the RAW value given by a device by this number. usually 1.0f (or -1.0f)
             float m_deadZone; //The absolute value deadzone that the value should be larger than before reporting the event.
-            HashedString m_hashedName;
         };
 
     public:
         InputComponent();
         ~InputComponent();
 
+        //May return nullptr to say that there's event name hashing collision (ultra rare)
+        HashedString* AddEventNameHelper(const char * eventName);
+        HashedString* AddEventNameHelper(const std::string& eventName);
+        //returns false if inputName is already listed in eventName.
+        bool AddEventInputItemHelper(const HashedString* eventName, eInputName inputName, float multiplier, float deadZone);
 
         bool AddInputEventHelper(const char * eventName, eInputName inputName, float multiplier = 1.0f, float deadZone = 0.1f)
         {
@@ -62,7 +67,8 @@ namespace GAL
 
         //The HashedString represents a regular event name String but it's been hashed so you
         //can use the hash for a fast switch case.
-        std::map<eInputName, Event> m_generators;
+        std::vector<HashedString> m_eventNames;
+        std::map<StringHash, std::vector<InputInfo>> m_eventInfoMap;
     };
 
 }; //namespace GAL

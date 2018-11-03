@@ -7,31 +7,10 @@ struct SDL_MouseButtonEvent;
 struct SDL_MouseWheelEvent;
 
 #include "System.h"
+#include "..\Components\InputComponent.h"
 
 namespace GAL
 {
-    struct IInputListener
-    {
-#if 0
-        //value is between -1.0f and 1.0f;
-        //if isDiscrete move by delta instead of speed.
-        virtual void OnMoveForward(float value, bool isDiscrete = false) {};
-        virtual void OnMoveRight(float value, bool isDiscrete = false) {};
-        virtual void OnMoveUp(float value, bool isDiscrete = false) {};
-
-        //yaw: value between 0.0f and 1.0f. Because this is usually
-        //     produced by a mouse, a value of 1.0f means the user
-        //     moved the mouse all over the X Screen dimension.
-        //     yaw should be interpreted as a rotation across the 3D UP axis.
-        //pitch: value between 0.0f and 1.0f. Because this is usually
-        //     produced by a mouse, a value of 1.0f means the user
-        //     moved the mouse all over the Y Screen dimension.
-        //     pitch should be interpreted as a rotation across the 3D RIGHT axis.
-        virtual void OnMoveYawPitch(float yaw, float pitch) {};
-#endif
-        virtual void OnInputEvent()
-    };
-
     class InputSystem : public System
     {
     public:
@@ -53,6 +32,8 @@ namespace GAL
         void ProcessMouseMotionEvent(const SDL_MouseMotionEvent& motionEvent);
         void ProcessMouseButtonEvent(const SDL_MouseButtonEvent& buttonEvent);
         void ProcessMouseWheelEvent(const SDL_MouseWheelEvent& wheelEvent);
+
+        void TriggerIfRegistered(InputComponent::eInputName inputName, float rawValue);
 
         UINT m_windowWidth, m_windowHeight;
     }; //class InputManager

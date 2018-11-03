@@ -14,6 +14,7 @@
 #include "Universe.h"
 
 #include "Systems\InputSystem.h"
+#include "Systems\RenderSystem.h"
 #include "ResourceLoaders\TriangleMeshLoader.h"
 
 using namespace DirectX;
@@ -103,7 +104,7 @@ namespace GAL
     bool Engine::LoadLevel(const char *levelName)
     {
         //We don't support loading levels by name, yet.
-        assert(levelname == nullptr);
+        assert(levelName == nullptr);
 
         //srand((unsigned int)time(NULL));
         srand(666);
@@ -146,11 +147,20 @@ namespace GAL
 
         //GAL::RenderNode* node = new GAL::RenderNode();
         //renderer.AddRenderNode(node);
+
+        return true;
     }
 
     bool Engine::CreateSystems(HWND hWnd)
     {
         m_inputSystem = static_cast<InputSystem*>(m_universe.CreateAndAddSystem<InputSystem>(hWnd));
+
+
+
+        for (auto system : m_universe.m_systems)
+        {
+            system->Initialize();
+        }
 
         return true;
     }

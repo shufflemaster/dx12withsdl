@@ -108,6 +108,9 @@
     <ClInclude Include="include\VertexTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Systems\RenderSystem.h">
+      <Filter>Source Files\Systems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -154,6 +157,9 @@
     </ClCompile>
     <ClCompile Include="ResourceLoaders\TriangleMeshLoader.cpp">
       <Filter>Source Files\ResourceLoaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\RenderSystem.cpp">
+      <Filter>Source Files\Systems</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

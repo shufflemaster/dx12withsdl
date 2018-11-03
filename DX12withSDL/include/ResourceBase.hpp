@@ -24,9 +24,9 @@ namespace GAL
         }
 
     public:
-        ResourceBase() = delete;
-        ResourceBase(const ResourceBase &) = delete;
-        ResourceBase(ResourceBase &&) noexcept = default;
+        ResourceBase() = default;
+        ResourceBase(const ResourceBase &) = default;
+        ResourceBase(ResourceBase &&) = default;
 
 
         //-------------------------------------------------------------------------

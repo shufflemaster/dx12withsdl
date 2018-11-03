@@ -6,7 +6,7 @@ namespace GAL
     {
     public:
         MeshComponent() : m_meshHandle(-1) {}
-        ~MeshComponent();
+        ~MeshComponent() {}
 
         //Defined at design time.
         std::string m_filename;

@@ -1,23 +1,19 @@
 #pragma once
 
-#include "Systems\System.h"
+#include "ResourceManager.h"
 
 namespace GAL
 {
-    class ResourceManager;
+    class System;
 
     class Universe
     {
+        friend class Engine;
+        
     public:
         Universe() = default;
 
-        ~Universe()
-        {
-            for (auto system : m_systems)
-            {
-                delete system;
-            }
-        }
+        ~Universe();
 
         //The order of calling methods is as follow.
 
@@ -26,23 +22,11 @@ namespace GAL
         {
             System* newSys = new T(this, std::forward<Args>(args)...);
             m_systems.push_back(newSys);
+            return newSys;
         }
 
-        void InitializeSystems()
-        {
-            for (auto system : m_systems)
-            {
-                system->Initialize();
-            }
-        }
-
-        void UpdateSystems(float deltaTime)
-        {
-            for (auto system : m_systems)
-            {
-                system->Update(m_registry, deltaTime);
-            }
-        }
+        void InitializeSystems();
+        void UpdateSystems(float deltaTime);
 
         EntityId CreteEntity()
         {
@@ -64,10 +48,16 @@ namespace GAL
             return m_resourceManager;
         }
 
+        EventDispatcher& GetEventDispatcher()
+        {
+            return m_eventDispatcher;
+        }
+
     private:
         Registry m_registry;
         ResourceManager m_resourceManager;
         std::vector<System*> m_systems;
+        EventDispatcher m_eventDispatcher;
     };
 
 }; //namespace GAL

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ResourceCache.hpp"
-#include "ResourceTypes\Mesh.h"
+#include "..\ResourceTypes\Mesh.h"
 
 namespace GAL
 {

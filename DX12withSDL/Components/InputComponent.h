@@ -39,36 +39,35 @@ namespace GAL
             eInputName m_inputName;
             float m_multiplier; //Multiply the RAW value given by a device by this number. usually 1.0f (or -1.0f)
             float m_deadZone; //The absolute value deadzone that the value should be larger than before reporting the event.
+
+            InputItem(eInputName inputName, float multiplier, float deadZone) :
+                m_inputName(inputName), m_multiplier(multiplier), m_deadZone(deadZone) {}
+        };
+
+        //This is what the listener will get.
+        struct InputEvent
+        {
+            HashedString m_name;
+            float m_value;
+
+            InputEvent(const HashedString& name, float value) : m_name(name), m_value(value) {}
         };
 
     public:
-        InputComponent();
-        ~InputComponent();
+        InputComponent() = default;
+        ~InputComponent() {};
 
         //May return nullptr to say that there's event name hashing collision (ultra rare)
         HashedString* AddEventNameHelper(const char * eventName);
-        HashedString* AddEventNameHelper(const std::string& eventName);
+        HashedString* AddEventNameHelper(const std::string& eventName) { return AddEventNameHelper(eventName.c_str()); }
+
         //returns false if inputName is already listed in eventName.
         bool AddEventInputItemHelper(const HashedString* eventName, eInputName inputName, float multiplier, float deadZone);
-
-        bool AddInputEventHelper(const char * eventName, eInputName inputName, float multiplier = 1.0f, float deadZone = 0.1f)
-        {
-            if (m_generators.find(inputName) != m_generators.end()) {
-                return false;
-            }
-
-            Event newEvt;
-            newEvt.m_hashedName.SetString(eventName);
-            newEvt.m_multiplier = multiplier;
-            newEvt.m_deadZone = deadZone;
-            m_generators[inputName] = newEvt;
-            return true;
-        }
 
         //The HashedString represents a regular event name String but it's been hashed so you
         //can use the hash for a fast switch case.
         std::vector<HashedString> m_eventNames;
-        std::map<StringHash, std::vector<InputInfo>> m_eventInfoMap;
+        std::map<StringHash, std::vector<InputItem>> m_eventInfoMap;
     };
 
 }; //namespace GAL

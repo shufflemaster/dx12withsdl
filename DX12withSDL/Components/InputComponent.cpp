@@ -1,33 +1,35 @@
 #include "pch.h"
 #include "InputComponent.h"
 
+#include "LogUtils.h"
+
 namespace GAL
 {
-    InputComponent::InputComponent()
+    //std::vector<HashedString> m_eventNames;
+    //std::map<StringHash, std::vector<InputItem>> m_eventInfoMap;
+    HashedString* InputComponent::AddEventNameHelper(const char * eventName)
     {
+        HashedString hashedString(eventName);
+        if (m_eventInfoMap.find(hashedString.GetHash()) != m_eventInfoMap.end())
+        {
+            ODERROR("Event with name %s already added", eventName);
+            return nullptr;
+        }
+        m_eventNames.push_back(hashedString);
+        m_eventInfoMap.insert(std::pair<StringHash, std::vector<InputItem>>(hashedString.GetHash(), std::vector<InputItem>()));
+        return &m_eventNames[m_eventNames.size() - 1];
     }
 
-
-    InputComponent::~InputComponent()
-    {
-    }
-
-    HashedString* AddEventNameHelper(const char * eventName);
-    HashedString* AddEventNameHelper(const std::string& eventName);
     //returns false if inputName is already listed in eventName.
-    bool AddEventInputItemHelper(const HashedString* eventName, eInputName inputName, float multiplier, float deadZone);
-
-    bool AddInputEventHelper(const char * eventName, eInputName inputName, float multiplier = 1.0f, float deadZone = 0.1f)
+    bool InputComponent::AddEventInputItemHelper(const HashedString* eventName, eInputName inputName, float multiplier, float deadZone)
     {
-        if (m_generators.find(inputName) != m_generators.end()) {
+        if (m_eventInfoMap.find(eventName->GetHash()) == m_eventInfoMap.end())
+        {
+            ODERROR("event with name %s and hash %llu doesn't exist", eventName->GetString().c_str(), eventName->GetHash());
             return false;
         }
-
-        Event newEvt;
-        newEvt.m_hashedName.SetString(eventName);
-        newEvt.m_multiplier = multiplier;
-        newEvt.m_deadZone = deadZone;
-        m_generators[inputName] = newEvt;
+        m_eventInfoMap[eventName->GetHash()].push_back(InputItem(inputName, multiplier, deadZone));
         return true;
     }
+
 }; //namespace GAL

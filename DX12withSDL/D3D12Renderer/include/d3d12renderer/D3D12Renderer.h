@@ -1,38 +1,43 @@
 #pragma once
 
-
-
 using namespace std;
 using namespace DirectX;
 
 #include "ConstantBufferPool.hpp"
+#include "d3d12renderer/GpuResourceManager.h"
 
 using Microsoft::WRL::ComPtr;
 
 namespace GAL
 {
     class Shader;
-    class RenderNode;
+
+    using RenderEntityId = Registry::entity_type;
 
     struct PerObjectConstantBufferData {
         XMFLOAT4X4 wvpMatrix;
     };
 
     //FIXME! There's no reason for the Renderer to be an input listener
-    class RendererD3D12
+    class D3D12Renderer
     {
     public:
-        static  RendererD3D12& GetRenderer() { return s_renderer; }
-        virtual ~RendererD3D12();
+        D3D12Renderer();
+        virtual ~D3D12Renderer();
 
         bool Init(HWND hWnd);
         void RenderFrame(float deltaTimeMillis);
-        void AddRenderNode(RenderNode* node);
         void CleanUp();
 
         ID3D12Device* GetDevice() { return m_device.Get();  }
         ID3D12CommandQueue* GetCommandQueue() { return m_commandQueue.Get(); }
         static void WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent);
+        GpuResourceManager& GetGpuResourceManager() { return m_gpuResourceManager; }
+
+        //The idea is that the Renderer returns a handle to a private-to-the-renderer entity
+        //So if the engine decides to destroy an Entity it can also use this handle to notify
+        //the renderer to also distroy its renderer counter part.
+        RenderEntityId AddRenderNode(ResourceHandle gpuMeshHandle, const XMFLOAT4X4A& m_worldMatrix);
 
         //IInputListener
         void OnMoveForward(float value, bool isDiscrete);
@@ -41,8 +46,6 @@ namespace GAL
         void OnMoveYawPitch(float yaw, float pitch);
 
     private:
-        RendererD3D12();
-
         bool SetupRenderTargets();
         bool SetupSwapChain();
         bool CreateDeviceAndSwapChain(HWND hWnd); //Init
@@ -59,8 +62,6 @@ namespace GAL
         void Swap();
 
         void CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix);
-
-        static  RendererD3D12 s_renderer;
 
         static const UINT kBackBufferCount = 3; //define number of backbuffers to use
 
@@ -122,7 +123,8 @@ namespace GAL
         unique_ptr<Shader> m_vertexShader;
         unique_ptr<Shader> m_pixelShader;
 
-        vector<RenderNode*> m_renderNodes;
+        GpuResourceManager m_gpuResourceManager;
+        Registry m_registry; //The database of render nodes.
     };
 }
 

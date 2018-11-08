@@ -20,7 +20,7 @@ namespace GAL
         InputSystem(const InputSystem&) = delete;
         InputSystem(InputSystem&&) = delete;
 
-        void Update(Registry& /*registry*/, float /*deltaTime*/) override {};
+        void TickUpdate(Registry& /*registry*/, float /*deltaTime*/) override {};
         void ProcessEvent(const SDL_Event& windowEvent);
 
         virtual ~InputSystem();

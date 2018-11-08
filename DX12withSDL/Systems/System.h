@@ -16,7 +16,7 @@ namespace GAL
         virtual ~System(){}
 
         virtual void Initialize() {} //Suitable to avoid making ugly constructors.
-        virtual void Update(Registry& registry, float deltaTime) = 0;
+        virtual void TickUpdate(Registry& registry, float deltaTime) = 0;
 
         bool GetWantsUpdate() { return m_wantsUpdate; }
 

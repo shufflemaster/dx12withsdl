@@ -106,7 +106,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;$(MSBuildProjectDirectory)\d3d12renderer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -152,7 +152,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;$(MSBuildProjectDirectory)\d3d12renderer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -173,7 +173,13 @@
   <ItemGroup>
     <ClInclude Include="Components\InputComponent.h" />
     <ClInclude Include="Components\MeshComponent.h" />
+    <ClInclude Include="Components\RendererIdComponent.h" />
     <ClInclude Include="Components\TransformComponent.h" />
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\D3D12Renderer.h" />
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceLoaders\GpuMeshLoader.h" />
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceManager.h" />
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceTypes\GpuMesh.h" />
+    <ClInclude Include="D3D12Renderer\RenderNode.h" />
     <ClInclude Include="include\ConstantBufferPool.hpp" />
     <ClInclude Include="include\d3dx12.h" />
     <ClInclude Include="include\ecs_typedefs.h" />
@@ -183,8 +189,6 @@
     <ClInclude Include="include\LogUtils.h" />
     <ClInclude Include="include\pch.h" />
     <ClInclude Include="include\PerfCounter.h" />
-    <ClInclude Include="include\RendererD3D12.h" />
-    <ClInclude Include="include\RenderNode.h" />
     <ClInclude Include="include\ResourceBase.hpp" />
     <ClInclude Include="include\ResourceCache.hpp" />
     <ClInclude Include="include\ResourceLoader.hpp" />
@@ -203,7 +207,13 @@
   <ItemGroup>
     <ClCompile Include="Components\InputComponent.cpp" />
     <ClCompile Include="Components\MeshComponent.cpp" />
+    <ClCompile Include="Components\RendererIdComponent.cpp" />
     <ClCompile Include="Components\TransformComponent.cpp" />
+    <ClCompile Include="D3D12Renderer\D3D12Renderer.cpp" />
+    <ClCompile Include="D3D12Renderer\GpuResourceLoaders\GpuMeshLoader.cpp" />
+    <ClCompile Include="D3D12Renderer\GpuResourceManager.cpp" />
+    <ClCompile Include="D3D12Renderer\GpuResourceTypes\GpuMesh.cpp" />
+    <ClCompile Include="D3D12Renderer\RenderNode.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp">
@@ -213,8 +223,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="LogUtils.cpp" />
-    <ClCompile Include="RendererD3D12.cpp" />
-    <ClCompile Include="RenderNode.cpp" />
     <ClCompile Include="ResourceLoaders\TriangleMeshLoader.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="ResourceTypes\Mesh.cpp" />

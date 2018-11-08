@@ -25,7 +25,9 @@ namespace GAL
     {
         for (auto system : m_systems)
         {
-            system->Update(m_registry, deltaTime);
+            if (!system->GetWantsUpdate())
+                continue;
+            system->TickUpdate(m_registry, deltaTime);
         }
     }
 

@@ -1,28 +1,19 @@
 #include "pch.h"
 
-#include "RenderNode.h"
+#include "d3d12renderer/GpuResourceTypes/GpuMesh.h"
+#include "d3d12renderer/GpuResourceLoaders/GpuMeshLoader.h"
+
+#include "d3d12renderer/D3D12Renderer.h"
 #include "VertexTypes.h"
-#include "LogUtils.h"
-#include "RendererD3D12.h"
 
 namespace GAL
 {
-
-    RenderNode::RenderNode() : m_numIndices(0)
+    std::shared_ptr<GpuMesh> GpuMeshLoader::Load(const std::string& filename,
+        ID3D12Device* device, ID3D12CommandQueue* commandQueue,
+        const P3F_C4F* vertices, uint32_t numVertices, const DWORD* indices, uint32_t numIndices) const
     {
-    }
-
-
-    RenderNode::~RenderNode()
-    {
-    }
-
-    bool RenderNode::InitWithVertices(const P3F_C4F* vertices, uint32_t numVertices,
-        const DWORD* indices, uint32_t numIndices)
-    {
-        ID3D12Device* device = RendererD3D12::GetRenderer().GetDevice();
-
-        m_numIndices = numIndices;
+        std::shared_ptr<GpuMesh> gpuMesh = std::make_shared<GpuMesh>(filename);
+        gpuMesh->m_numIndices = numIndices;
 
         //FIXME: Move this into some kind of mesh object for efficient instancing
         //Create the vertex buffer
@@ -32,15 +23,15 @@ namespace GAL
         // an upload heap
         UINT vertexDataSize = sizeof(*vertices) * numVertices;
         device->CreateCommittedResource(
-                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
-                D3D12_HEAP_FLAG_NONE, // no flags
-                &CD3DX12_RESOURCE_DESC::Buffer(vertexDataSize), // resource description for a buffer
-                D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
-                                                // from the upload heap to this heap
-                nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-                IID_PPV_ARGS(&m_vertexBuffer));
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
+            D3D12_HEAP_FLAG_NONE, // no flags
+            &CD3DX12_RESOURCE_DESC::Buffer(vertexDataSize), // resource description for a buffer
+            D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
+                                            // from the upload heap to this heap
+            nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
+            IID_PPV_ARGS(&gpuMesh->m_vertexBuffer));
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-        m_vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
+        gpuMesh->m_vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
 
         UINT indexDataSize = sizeof(*indices) * numIndices;
         device->CreateCommittedResource(
@@ -50,9 +41,9 @@ namespace GAL
             D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
                                             // from the upload heap to this heap
             nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-            IID_PPV_ARGS(&m_indexBuffer));
+            IID_PPV_ARGS(&gpuMesh->m_indexBuffer));
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-        m_indexBuffer->SetName(L"Index Buffer Resource Heap");
+        gpuMesh->m_indexBuffer->SetName(L"Index Buffer Resource Heap");
 
         // create upload heap
         // upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
@@ -68,13 +59,13 @@ namespace GAL
         vBufferUploadHeap->SetName(L"V and I Buffer Upload Resource Heap");
 
         //Create the buffer views
-        m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-        m_vertexBufferView.SizeInBytes = vertexDataSize;
-        m_vertexBufferView.StrideInBytes = sizeof(*vertices);
+        gpuMesh->m_vertexBufferView.BufferLocation = gpuMesh->m_vertexBuffer->GetGPUVirtualAddress();
+        gpuMesh->m_vertexBufferView.SizeInBytes = vertexDataSize;
+        gpuMesh->m_vertexBufferView.StrideInBytes = sizeof(*vertices);
 
-        m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-        m_indexBufferView.SizeInBytes = indexDataSize;
-        m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+        gpuMesh->m_indexBufferView.BufferLocation = gpuMesh->m_indexBuffer->GetGPUVirtualAddress();
+        gpuMesh->m_indexBufferView.SizeInBytes = indexDataSize;
+        gpuMesh->m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
         // Copy data on CPU into the upload buffer
         void* p;
@@ -100,16 +91,16 @@ namespace GAL
 
         // Copy data from upload buffer on CPU into the vertex and index buffers on 
         // the GPU
-        uploadCommandList->CopyBufferRegion(m_vertexBuffer.Get(), 0,
+        uploadCommandList->CopyBufferRegion(gpuMesh->m_vertexBuffer.Get(), 0,
             vBufferUploadHeap.Get(), 0, vertexDataSize);
-        uploadCommandList->CopyBufferRegion(m_indexBuffer.Get(), 0,
+        uploadCommandList->CopyBufferRegion(gpuMesh->m_indexBuffer.Get(), 0,
             vBufferUploadHeap.Get(), vertexDataSize, indexDataSize);
 
         // Barriers, batch them together
         CD3DX12_RESOURCE_BARRIER barriers[2] = {
-            CD3DX12_RESOURCE_BARRIER::Transition(m_vertexBuffer.Get(),
+            CD3DX12_RESOURCE_BARRIER::Transition(gpuMesh->m_vertexBuffer.Get(),
             D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),
-            CD3DX12_RESOURCE_BARRIER::Transition(m_indexBuffer.Get(),
+            CD3DX12_RESOURCE_BARRIER::Transition(gpuMesh->m_indexBuffer.Get(),
                 D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER)
         };
 
@@ -118,20 +109,18 @@ namespace GAL
         uploadCommandList->Close();
 
         // Execute the upload and finish the command list
-        ID3D12CommandQueue* commandQueue = RendererD3D12::GetRenderer().GetCommandQueue();
         ID3D12CommandList* commandLists[] = { uploadCommandList.Get() };
         commandQueue->ExecuteCommandLists(std::extent<decltype(commandLists)>::value, commandLists);
         commandQueue->Signal(uploadFence.Get(), 1);
 
         auto waitEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        RendererD3D12::WaitForFence(uploadFence.Get(), 1, waitEvent);
+        D3D12Renderer::WaitForFence(uploadFence.Get(), 1, waitEvent);
 
         // Cleanup our upload handle
         uploadCommandAllocator->Reset();
 
         CloseHandle(waitEvent);
 
-        return true;
+        return gpuMesh;
     }
-
-};
+};//namespace GAL

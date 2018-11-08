@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Universe.h"
+#include "d3d12renderer/D3D12Renderer.h"
 
 namespace GAL
 {
-    class ResourceManager;
     class InputSystem;
     class RenderSystem;
 
@@ -20,7 +20,7 @@ namespace GAL
 
     private:
         Universe m_universe;
-        ResourceManager m_resourceManager;
+        D3D12Renderer m_renderer;
 
         //The Systems One by One (Created with help of Universe).
         InputSystem* m_inputSystem;
@@ -31,7 +31,7 @@ namespace GAL
         //in levelName is null, loads a hard coded level.
         bool LoadLevel(const char *levelName = nullptr);
 
-        bool CreateSystems(HWND hWnd);
+        bool CreateAndInitSystems(HWND hWnd);
     };
 
 }; //namespace GAL

@@ -4,19 +4,26 @@
 
 namespace GAL
 {
+    class D3D12Renderer;
+
     class RenderSystem : public System
     {
     public:
-        RenderSystem();
         ~RenderSystem();
 
-        RenderSystem(Universe* universe) : System(universe) {}
+        RenderSystem(Universe* universe, D3D12Renderer* renderer) : System(universe), m_renderer(renderer)
+        {
+            m_wantsUpdate = false;
+        }
 
         RenderSystem() = delete;
         RenderSystem(const RenderSystem&) = delete;
         RenderSystem(RenderSystem&&) = delete;
 
         void Initialize() override;
-        void Update(Registry& /*registry*/, float /*deltaTime*/) override {};
+        void TickUpdate(Registry& /*registry*/, float /*deltaTimeMillis*/) override {};
+
+    private:
+        D3D12Renderer* m_renderer;
     };
 }; //namespace GAL

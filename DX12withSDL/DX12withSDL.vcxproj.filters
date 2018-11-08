@@ -25,6 +25,27 @@
     <Filter Include="Source Files\ResourceLoaders">
       <UniqueIdentifier>{3e64ced3-c9d5-431e-8813-24378a9999a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\D3D12Renderer">
+      <UniqueIdentifier>{49b556bf-cb93-4fa3-bbf2-cde47d328f59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D12Renderer\include">
+      <UniqueIdentifier>{87d5c1e2-f865-4c0f-942a-d8320932a904}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D12Renderer\include\d3d12renderer">
+      <UniqueIdentifier>{8a8679e7-64bd-4b9d-bb92-06bd8e071d0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D12Renderer\GpuResourceLoaders">
+      <UniqueIdentifier>{49892157-ace7-4be1-aace-f586eee54127}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D12Renderer\GpuResourceTypes">
+      <UniqueIdentifier>{5c844974-5ce2-48b0-8cb3-2ba44cd6f25e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D12Renderer\include\d3d12renderer\GpuResourceLoaders">
+      <UniqueIdentifier>{b1fd6d81-71a9-4f4f-bc2d-92cc20de56dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\D3D12Renderer\include\d3d12renderer\GpuResourceTypes">
+      <UniqueIdentifier>{54cc0a0d-da9f-4184-b1f0-7e9a984ad181}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Components\MeshComponent.h">
@@ -75,12 +96,6 @@
     <ClInclude Include="include\PerfCounter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\RendererD3D12.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\RenderNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ResourceBase.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -111,6 +126,24 @@
     <ClInclude Include="Systems\RenderSystem.h">
       <Filter>Source Files\Systems</Filter>
     </ClInclude>
+    <ClInclude Include="D3D12Renderer\RenderNode.h">
+      <Filter>Source Files\D3D12Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\D3D12Renderer.h">
+      <Filter>Source Files\D3D12Renderer\include\d3d12renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceManager.h">
+      <Filter>Source Files\D3D12Renderer\include\d3d12renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\RendererIdComponent.h">
+      <Filter>Source Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceTypes\GpuMesh.h">
+      <Filter>Source Files\D3D12Renderer\include\d3d12renderer\GpuResourceTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceLoaders\GpuMeshLoader.h">
+      <Filter>Source Files\D3D12Renderer\include\d3d12renderer\GpuResourceLoaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -120,12 +153,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LogUtils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RendererD3D12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
@@ -160,6 +187,24 @@
     </ClCompile>
     <ClCompile Include="Systems\RenderSystem.cpp">
       <Filter>Source Files\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer\RenderNode.cpp">
+      <Filter>Source Files\D3D12Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer\D3D12Renderer.cpp">
+      <Filter>Source Files\D3D12Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer\GpuResourceLoaders\GpuMeshLoader.cpp">
+      <Filter>Source Files\D3D12Renderer\GpuResourceLoaders</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer\GpuResourceTypes\GpuMesh.cpp">
+      <Filter>Source Files\D3D12Renderer\GpuResourceTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer\GpuResourceManager.cpp">
+      <Filter>Source Files\D3D12Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\RendererIdComponent.cpp">
+      <Filter>Source Files\Components</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

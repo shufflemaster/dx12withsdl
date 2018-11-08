@@ -1,7 +1,11 @@
 #include "pch.h"
 
 #include "LogUtils.h"
-#include "RendererD3D12.h"
+
+#include "d3d12renderer/GpuResourceTypes/GpuMesh.h"
+#include "d3d12renderer/D3D12Renderer.h"
+
+
 #include "RenderNode.h"
 #include "Shader.h"
 #include "VertexTypes.h"
@@ -12,9 +16,7 @@ namespace GAL
 #define MY_SAMPLE_DESC_COUNT (1)
 #define MY_SAMPLE_DESC_QUALITY (0)
 
-    RendererD3D12 RendererD3D12::s_renderer;
-
-    RendererD3D12::RendererD3D12() : m_currentBackBuffer(0)
+    D3D12Renderer::D3D12Renderer() : m_currentBackBuffer(0)
     {
         m_cameraSpeed = 4.0f; //World units per second
         m_cameraInput = {0.0f, 0.0f, 0.0f};
@@ -23,11 +25,11 @@ namespace GAL
     }
 
 
-    RendererD3D12::~RendererD3D12()
+    D3D12Renderer::~D3D12Renderer()
     {
     }
 
-    bool RendererD3D12::Init(HWND hWnd)
+    bool D3D12Renderer::Init(HWND hWnd)
     {
         bool retVal = false;
 
@@ -70,7 +72,7 @@ namespace GAL
         return retVal;
     }
 
-    bool RendererD3D12::SetupRenderTargets()
+    bool D3D12Renderer::SetupRenderTargets()
     {
         D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
         heapDesc.NumDescriptors = kBackBufferCount;
@@ -97,7 +99,7 @@ namespace GAL
     }
 
 
-    bool RendererD3D12::SetupSwapChain()
+    bool D3D12Renderer::SetupSwapChain()
     {
         // This is the first fence value we'll set, has to be != our initial value
         // below so we can wait on the first fence correctly
@@ -121,7 +123,7 @@ namespace GAL
         return SetupRenderTargets();
     }
 
-    bool RendererD3D12::CreateDeviceAndSwapChain(HWND hWnd)
+    bool D3D12Renderer::CreateDeviceAndSwapChain(HWND hWnd)
     {
         // Enable the debug layers when in debug mode
     // If this fails, install the Graphics Tools for Windows. On Windows 10,
@@ -183,7 +185,7 @@ namespace GAL
         // Create the swap chain descriptor.
         DXGI_SWAP_CHAIN_DESC swapChainDesc;
         ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
-        swapChainDesc.BufferCount = RendererD3D12::kBackBufferCount;
+        swapChainDesc.BufferCount = D3D12Renderer::kBackBufferCount;
         swapChainDesc.BufferDesc.Format = MY_RENDER_TARGET_FORMAT;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.OutputWindow = hWnd;
@@ -202,7 +204,7 @@ namespace GAL
         //increase max frame latency when required
         if (swapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
         {
-            m_swapChain->SetMaximumFrameLatency(RendererD3D12::kBackBufferCount);
+            m_swapChain->SetMaximumFrameLatency(D3D12Renderer::kBackBufferCount);
         }
 
         m_renderTargetViewDescriptorSize =
@@ -211,7 +213,7 @@ namespace GAL
         return SetupSwapChain();
     }
 
-    bool RendererD3D12::CreateDepthStencilBuffer()
+    bool D3D12Renderer::CreateDepthStencilBuffer()
     {
         // create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
         D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -257,7 +259,7 @@ namespace GAL
         return true;
     }
 
-    bool RendererD3D12::CreateAllocatorsAndCommandLists()
+    bool D3D12Renderer::CreateAllocatorsAndCommandLists()
     {
         for (int i = 0; i < kBackBufferCount; ++i) {
             m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -270,7 +272,7 @@ namespace GAL
         return true;
     }
 
-   void RendererD3D12::DefineViewportScissor()
+   void D3D12Renderer::DefineViewportScissor()
     {
         m_rectScissor = { 0, 0,
             static_cast<LONG>(m_windowWidth),
@@ -283,7 +285,7 @@ namespace GAL
         };
     }
 
-   bool RendererD3D12::CreateRootSignature()
+   bool D3D12Renderer::CreateRootSignature()
    {
        // create a root descriptor, which explains where to find the data for this root parameter
        D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
@@ -324,7 +326,7 @@ namespace GAL
        return true;
    }
 
-   bool RendererD3D12::CreatePipelineStateObject()
+   bool D3D12Renderer::CreatePipelineStateObject()
    {
        //Create vertex and pixel shader
        m_vertexShader = std::make_unique<Shader>(L"Shaders\\P3F_C4F_Shaders.hlsl", "VSMain", Shader::TargetType::VertexShader);
@@ -379,12 +381,12 @@ namespace GAL
        return true;
    }
 
-   bool RendererD3D12::CreateConstantBuffer()
+   bool D3D12Renderer::CreateConstantBuffer()
    {
        return m_constantBufferPool.Init(m_device.Get());
    }
 
-   void RendererD3D12::UpdateCameraAndProjectionMatrices(float deltaTimeMillis)
+   void D3D12Renderer::UpdateCameraAndProjectionMatrices(float deltaTimeMillis)
    {
        // build projection and view matrix
        XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14159f / 180.0f), (float)m_windowWidth / (float)m_windowHeight, 0.1f, 1000.0f);
@@ -420,12 +422,7 @@ namespace GAL
        XMStoreFloat4x4(&m_cameraViewMat, tmpMat);
    }
 
-   void RendererD3D12::AddRenderNode(RenderNode* node)
-   {
-       m_renderNodes.push_back(node);
-   }
-
-   void RendererD3D12::CleanUp()
+   void D3D12Renderer::CleanUp()
    {
        // Drain the queue, wait for everything to finish
        for (int i = 0; i < kBackBufferCount; ++i) {
@@ -437,24 +434,33 @@ namespace GAL
            CloseHandle(evt);
        }
 
-       //Release the render nodes.
-       for (RenderNode* renderNode : m_renderNodes)
-       {
-           delete renderNode;
-       }
-       m_renderNodes.clear();
+       //Release the entities and components.
+       m_registry.reset();
+       //Release the resources,
+       m_gpuResourceManager.Clear();
    }
 
-   void RendererD3D12::WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent)
+   void D3D12Renderer::WaitForFence(ID3D12Fence* fence, UINT64 completionValue, HANDLE waitEvent)
    {
        if (fence->GetCompletedValue() < completionValue) {
            fence->SetEventOnCompletion(completionValue, waitEvent);
            WaitForSingleObject(waitEvent, INFINITE);
        }
    }
+
+   RenderEntityId D3D12Renderer::AddRenderNode(ResourceHandle gpuMeshHandle, const XMFLOAT4X4A& m_worldMatrix)
+   {
+       RenderEntityId renderEntity = m_registry.create();
+
+       RenderNode& renderNode = m_registry.assign<RenderNode>(renderEntity);
+       renderNode.m_gpuMeshHandle = gpuMeshHandle;
+       renderNode.m_worldMatrix = m_worldMatrix;
+
+       return renderEntity;
+   }
     
    /////////////////////    IInputListener Start
-   void RendererD3D12::OnMoveForward(float value, bool isDiscrete)
+   void D3D12Renderer::OnMoveForward(float value, bool isDiscrete)
    {
        if (!isDiscrete)
        {
@@ -468,7 +474,7 @@ namespace GAL
        XMStoreFloat3(&m_cameraPosition, position);
    }
 
-   void RendererD3D12::OnMoveRight(float value, bool isDiscrete)
+   void D3D12Renderer::OnMoveRight(float value, bool isDiscrete)
    {
        if (!isDiscrete)
        {
@@ -487,7 +493,7 @@ namespace GAL
        XMStoreFloat3(&m_cameraPosition, position);
    }
    
-   void RendererD3D12::OnMoveUp(float value, bool isDiscrete)
+   void D3D12Renderer::OnMoveUp(float value, bool isDiscrete)
    {
        if (!isDiscrete)
        {
@@ -509,7 +515,7 @@ namespace GAL
        XMStoreFloat3(&m_cameraPosition, position);
    }
 
-   void RendererD3D12::OnMoveYawPitch(float yaw, float pitch)
+   void D3D12Renderer::OnMoveYawPitch(float yaw, float pitch)
    {
        // Calculate how much to move in the current camera direction.
        XMVECTOR camForward = XMLoadFloat3(&m_cameraForward);
@@ -539,7 +545,7 @@ namespace GAL
    /////////////////////    IInputListener End
 
 
-   void RendererD3D12::PreRender()
+   void D3D12Renderer::PreRender()
    {
        m_commandAllocators[m_currentBackBuffer]->Reset();
 
@@ -580,7 +586,7 @@ namespace GAL
 
    } // RendererD3D12::PrepareRender()
 
-   void RendererD3D12::PostRender()
+   void D3D12Renderer::PostRender()
    {
        // Transition the swap chain back to present
        D3D12_RESOURCE_BARRIER barrier;
@@ -602,7 +608,7 @@ namespace GAL
 
    } //RendererD3D12::FinalizeRender()
 
-   void RendererD3D12::CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix)
+   void D3D12Renderer::CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix)
    {
        XMMATRIX objWorldMat = XMLoadFloat4x4(&objWorldMatrix);
        XMMATRIX cameraViewMat = XMLoadFloat4x4(&m_cameraViewMat);
@@ -618,7 +624,7 @@ namespace GAL
     * Present the current frame by swapping the back buffer, then move to the
     * next back buffer and also signal the fence for the current queue slot entry.
     */
-   void RendererD3D12::Swap()
+   void D3D12Renderer::Swap()
    {
        m_swapChain->Present(0, 0);
 
@@ -633,7 +639,7 @@ namespace GAL
 
    } //RendererD3D12::Swap()
 
-    void RendererD3D12::RenderFrame(float deltaTimeMillis)
+    void D3D12Renderer::RenderFrame(float deltaTimeMillis)
     {
         WaitForFence(m_frameFences[m_currentBackBuffer].Get(),
             m_fenceValues[m_currentBackBuffer],
@@ -655,18 +661,23 @@ namespace GAL
 
         // Set descriptor heaps....
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        GpuMeshCache& gpuMeshCache = m_gpuResourceManager.GetGpuMeshCache();
         int renderObjectIdx = 0;
-        for (RenderNode* renderNode : m_renderNodes)
+        auto rawView = m_registry.raw_view<RenderNode>();
+        for (auto& renderNode : rawView)
         {
             //Update
             PerObjectConstantBufferData cbData;
-            CalculateWVPMatrixForShader(cbData.wvpMatrix, renderNode->m_worldMatrix);
+            CalculateWVPMatrixForShader(cbData.wvpMatrix, renderNode.m_worldMatrix);
 
             D3D12_GPU_VIRTUAL_ADDRESS cbvGpuAddress = m_constantBufferPool.UploadData(&cbData, m_currentBackBuffer, renderObjectIdx);
             commandList->SetGraphicsRootConstantBufferView(0, cbvGpuAddress);
-            commandList->IASetVertexBuffers(0, 1, &renderNode->m_vertexBufferView);
-            commandList->IASetIndexBuffer(&renderNode->m_indexBufferView);
-            commandList->DrawIndexedInstanced(renderNode->m_numIndices, 1, 0, 0, 0);
+
+            //Get the gpuMeshResource.
+            std::shared_ptr<GpuMesh> gpuMesh = gpuMeshCache.GetResource(renderNode.m_gpuMeshHandle);
+            commandList->IASetVertexBuffers(0, 1, gpuMesh->GetVertexBufferView());
+            commandList->IASetIndexBuffer(gpuMesh->GetIndexBufferView());
+            commandList->DrawIndexedInstanced(gpuMesh->GetNumIndices(), 1, 0, 0, 0);
 
             renderObjectIdx++;
         }

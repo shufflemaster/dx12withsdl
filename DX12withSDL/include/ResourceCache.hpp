@@ -70,17 +70,6 @@ namespace GAL
         }
 
         //-------------------------------------------------------------------------
-        // Returns a resource by its handle.
-        //-------------------------------------------------------------------------
-        std::shared_ptr<ResourceType> GetResource(ResourceHandle handle)
-        {
-            if ((handle >= 0) && (handle < m_collection.size()))
-                return m_collection[handle];
-
-            return nullptr;
-        }
-
-        //-------------------------------------------------------------------------
         // Clears the resource list.
         //-------------------------------------------------------------------------
         void EmptyCache()
@@ -114,6 +103,17 @@ namespace GAL
         }
 
         //-------------------------------------------------------------------------
+        // Returns a resource by its handle.
+        //-------------------------------------------------------------------------
+        std::shared_ptr<ResourceType> GetResource(ResourceHandle handle)
+        {
+            if ((handle >= 0) && (handle < m_collection.size()))
+                return m_collection[handle];
+
+            return nullptr;
+        }
+
+        //-------------------------------------------------------------------------
         // Overloaded [] operator for easier access
         //-------------------------------------------------------------------------
         std::shared_ptr<ResourceType> operator [](ResourceHandle handle)
@@ -122,6 +122,20 @@ namespace GAL
                 return m_collection[handle];
 
             return nullptr;
+        }
+
+        bool HasResource(const std::string& resName)
+        {
+            auto itor = m_nameToHandle.find(resName);
+            return (itor != m_nameToHandle.end());
+        }
+
+        ResourceHandle GetHandle(const std::string& resName)
+        {
+            auto itor = m_nameToHandle.find(resName);
+            if (itor == m_nameToHandle.end())
+                return -1;
+            return itor->second;
         }
 
     private:

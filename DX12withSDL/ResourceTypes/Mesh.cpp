@@ -5,11 +5,11 @@
 
 namespace GAL
 {
-    Mesh::Mesh(const std::string& filename) : ResourceBase(filename)
+    Mesh::Mesh(const std::string& filename) : ResourceBase(filename), m_vertices(nullptr), m_indices(nullptr)
     {
     }
 
-    Mesh::Mesh(Mesh&& other)
+    Mesh::Mesh(Mesh&& other) : ResourceBase(std::move(other))
     {
         m_numVertices = other.m_numVertices;
         m_numIndices = other.m_numIndices;
@@ -37,7 +37,7 @@ namespace GAL
         }
     }
 
-    void Mesh::Allocate(size_t numVertices, size_t numIndices)
+    void Mesh::Allocate(uint32_t numVertices, uint32_t numIndices)
     {
         assert(m_vertices == nullptr);
         assert(m_indices == nullptr);

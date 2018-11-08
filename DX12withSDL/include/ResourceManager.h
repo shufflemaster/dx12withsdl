@@ -1,10 +1,11 @@
 #pragma once
 
 #include "ResourceCache.hpp"
-#include "..\ResourceTypes\Mesh.h"
 
 namespace GAL
 {
+    class Mesh;
+
     using MeshCache = ResourceCache<Mesh>;
 
     class ResourceManager

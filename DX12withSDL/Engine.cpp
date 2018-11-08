@@ -2,20 +2,19 @@
 
 #include "PerfCounter.h"
 #include "TimeCounter.h"
-#include "RendererD3D12.h"
 #include "VertexTypes.h"
-#include "RenderNode.h"
-#include "Components\MeshComponent.h"
-#include "Components\TransformComponent.h"
+#include "Components/MeshComponent.h"
+#include "Components/TransformComponent.h"
 #include "HashedString.h"
 
 #include "Engine.h"
 #include "ResourceManager.h"
 #include "Universe.h"
 
-#include "Systems\InputSystem.h"
-#include "Systems\RenderSystem.h"
-#include "ResourceLoaders\TriangleMeshLoader.h"
+#include "Systems/InputSystem.h"
+#include "Systems/RenderSystem.h"
+#include "ResourceTypes/Mesh.h"
+#include "ResourceLoaders/TriangleMeshLoader.h"
 
 using namespace DirectX;
 
@@ -51,19 +50,18 @@ namespace GAL
 
     int Engine::Run(HWND hWnd)
     {
+        if (!m_renderer.Init(hWnd)) {
+            ODERROR("Failed to initialize the renderer");
+            return -1;
+        }
+
         if (!LoadLevel())
         {
             return -1;
         }
 
-        if (!CreateSystems(hWnd))
+        if (!CreateAndInitSystems(hWnd))
         {
-            return -1;
-        }
-
-        GAL::RendererD3D12& renderer = GAL::RendererD3D12::GetRenderer();
-        if (!renderer.Init(hWnd)) {
-            ODERROR("Failed to initialize the renderer");
             return -1;
         }
 
@@ -85,12 +83,14 @@ namespace GAL
 
             deltaTimeMilis = (float)timerCounter.readDeltaTimeMillis();
             //GAL::odprintf("deltaTimeMilis=%f", deltaTimeMilis);
-            renderer.RenderFrame(deltaTimeMilis);
+
+            m_universe.UpdateSystems(deltaTimeMilis);
+            m_renderer.RenderFrame(deltaTimeMilis);
 
             ++frameCnt;
         }
 
-        renderer.CleanUp();
+        m_renderer.CleanUp();
 
         perfCounter.stop();
         //FILE* pFile = fopen("test.txt", "w");
@@ -125,6 +125,7 @@ namespace GAL
             meshResourceNameStream << "assets/mesh/triangle" << i;
             MeshComponent& meshComponent = registry.assign<MeshComponent>(newEntity);
             meshComponent.m_filename = meshResourceNameStream.str();
+            meshResourceNameStream.str(std::string());
 
             float rndRed = randFloat(0.2f, 1.0f);
             float rndGreen = randFloat(0.2f, 1.0f);
@@ -151,16 +152,13 @@ namespace GAL
         return true;
     }
 
-    bool Engine::CreateSystems(HWND hWnd)
+    bool Engine::CreateAndInitSystems(HWND hWnd)
     {
+        //The order in which we add it here determines the order of Tick Update.
         m_inputSystem = static_cast<InputSystem*>(m_universe.CreateAndAddSystem<InputSystem>(hWnd));
+        m_renderSystem = static_cast<RenderSystem*>(m_universe.CreateAndAddSystem<RenderSystem>(&m_renderer));
 
-
-
-        for (auto system : m_universe.m_systems)
-        {
-            system->Initialize();
-        }
+        m_universe.InitializeSystems();
 
         return true;
     }

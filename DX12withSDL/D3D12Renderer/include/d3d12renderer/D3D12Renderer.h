@@ -39,11 +39,25 @@ namespace GAL
         //the renderer to also distroy its renderer counter part.
         RenderEntityId AddRenderNode(ResourceHandle gpuMeshHandle, const XMFLOAT4X4A& m_worldMatrix);
 
-        //IInputListener
-        void OnMoveForward(float value, bool isDiscrete);
-        void OnMoveRight(float value, bool isDiscrete);
-        void OnMoveUp(float value, bool isDiscrete);
-        void OnMoveYawPitch(float yaw, float pitch);
+        void InitDefaultCameraMatrices();
+
+        inline XMMATRIX MakeProjMatrix(float fieldOfViewDegrees, float nearClipDistance, float farClipDistance) const
+        {
+            assert((m_windowWidth != 0) && (m_windowHeight != 0));
+            return XMMatrixPerspectiveFovLH(fieldOfViewDegrees*(3.14159f / 180.0f), (float)m_windowWidth / (float)m_windowHeight, nearClipDistance, farClipDistance);
+        }
+
+        inline XMMATRIX MakeViewProjMatrix(XMMATRIX projMatrix, XMVECTOR position, XMVECTOR forward, XMVECTOR up) const
+        {
+            XMMATRIX viewMat = XMMatrixLookToLH(position, forward, up);
+            return viewMat * projMatrix;
+        }
+
+        //Returns the instance that owns the camera.
+        RenderEntityId AddCamera(float fieldOfViewDegrees, float nearClipDistance, float farClipDistance,
+            XMVECTOR position, XMVECTOR forward, XMVECTOR up);
+        void SetActiveCamera(RenderEntityId camId);
+        void UpdateCamera(RenderEntityId camId, XMVECTOR position, XMVECTOR forward, XMVECTOR up);
 
     private:
         bool SetupRenderTargets();
@@ -109,12 +123,15 @@ namespace GAL
         D3D12_VIEWPORT m_viewport;
         D3D12_RECT m_rectScissor;
 
-        XMFLOAT4X4 m_cameraProjMat; // this will store our projection matrix
-        XMFLOAT4X4 m_cameraViewMat; // this will store our view matrix
+        XMMATRIX m_cameraProjMat; //Contains proj matrix;
+        XMMATRIX m_cameraViewProjMat; //Contains View and Projection in one matrix.
+        RenderEntityId m_activeCameraEntity;
+#if 0
         float m_cameraSpeed;
         XMFLOAT3 m_cameraInput;
         XMFLOAT3 m_cameraForward;
         XMFLOAT3 m_cameraPosition;
+#endif
 
 
         ComPtr <ID3D12RootSignature> m_rootSignature; // root signature defines data shaders will access

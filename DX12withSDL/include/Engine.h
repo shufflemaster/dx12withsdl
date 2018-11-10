@@ -6,6 +6,7 @@
 namespace GAL
 {
     class InputSystem;
+    class CameraSystem;
     class RenderSystem;
 
     class Engine
@@ -24,6 +25,7 @@ namespace GAL
 
         //The Systems One by One (Created with help of Universe).
         InputSystem* m_inputSystem;
+        CameraSystem* m_cameraSystem;
         RenderSystem* m_renderSystem;
 
         //returns true on success.

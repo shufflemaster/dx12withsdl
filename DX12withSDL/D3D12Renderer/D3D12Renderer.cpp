@@ -9,6 +9,7 @@
 #include "RenderNode.h"
 #include "Shader.h"
 #include "VertexTypes.h"
+#include "Camera.h"
 
 namespace GAL
 {
@@ -16,12 +17,12 @@ namespace GAL
 #define MY_SAMPLE_DESC_COUNT (1)
 #define MY_SAMPLE_DESC_QUALITY (0)
 
-    D3D12Renderer::D3D12Renderer() : m_currentBackBuffer(0)
+    D3D12Renderer::D3D12Renderer() : m_currentBackBuffer(0), m_windowWidth(0), m_windowHeight(0)
     {
-        m_cameraSpeed = 4.0f; //World units per second
-        m_cameraInput = {0.0f, 0.0f, 0.0f};
-        m_cameraForward = {0.0f, 0.0f, 1.0f};
-        m_cameraPosition = {0.0f, 0.0f, -4.0f};
+       // m_cameraSpeed = 4.0f; //World units per second
+       // m_cameraInput = {0.0f, 0.0f, 0.0f};
+
+        m_activeCameraEntity = NullEntity;
     }
 
 
@@ -38,6 +39,9 @@ namespace GAL
         GetClientRect(hWnd, &clientSize);
         m_windowWidth = clientSize.right;
         m_windowHeight = clientSize.bottom;
+
+        //Define a default ViewProjMatrix.
+        InitDefaultCameraMatrices();
 
         do {
             if (!CreateDeviceAndSwapChain(hWnd))
@@ -388,6 +392,7 @@ namespace GAL
 
    void D3D12Renderer::UpdateCameraAndProjectionMatrices(float deltaTimeMillis)
    {
+#if 0
        // build projection and view matrix
        XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14159f / 180.0f), (float)m_windowWidth / (float)m_windowHeight, 0.1f, 1000.0f);
        XMStoreFloat4x4(&m_cameraProjMat, tmpMat);
@@ -420,6 +425,7 @@ namespace GAL
        XMVECTOR cTarg = position + camForward;
        tmpMat = XMMatrixLookAtLH(position, cTarg, camUp);
        XMStoreFloat4x4(&m_cameraViewMat, tmpMat);
+#endif
    }
 
    void D3D12Renderer::CleanUp()
@@ -458,8 +464,71 @@ namespace GAL
 
        return renderEntity;
    }
+
+   void D3D12Renderer::InitDefaultCameraMatrices()
+   {
+       m_cameraProjMat = MakeProjMatrix(45.0f, 0.1f, 1000.0f);
+       m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat,
+           XMVectorSet(0.0f, 0.0f, -4.0f, 1.0f),
+           XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f),
+           XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+   }
+
+   RenderEntityId D3D12Renderer::AddCamera(float fieldOfViewDegrees, float nearClipDistance, float farClipDistance,
+       XMVECTOR position, XMVECTOR forward, XMVECTOR up)
+   {
+       RenderEntityId camEntity = m_registry.create();
+       Camera& camData = m_registry.assign<Camera>(camEntity);
+
+       //The latest added camera becomes the current camera
+       m_cameraProjMat = MakeProjMatrix(fieldOfViewDegrees, nearClipDistance, farClipDistance);
+       m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat, position, forward, up);
+
+       XMStoreFloat4x4A(&camData.m_projMatrix, m_cameraProjMat);
+       XMStoreFloat4x4A(&camData.m_viewProjMatrix, m_cameraViewProjMat);
+       m_activeCameraEntity = camEntity;
+
+       return camEntity;
+   }
+
+   void D3D12Renderer::SetActiveCamera(RenderEntityId camId)
+   {
+       assert(camId != NullEntity);
+
+       if (camId == m_activeCameraEntity)
+           return; //All is good.
+
+       Camera& camData = m_registry.get<Camera>(camId);
+       m_cameraProjMat = XMLoadFloat4x4A(&camData.m_projMatrix);
+       m_cameraViewProjMat = XMLoadFloat4x4A(&camData.m_viewProjMatrix);
+
+       m_activeCameraEntity = camId;
+   }
+
+   void D3D12Renderer::UpdateCamera(RenderEntityId camId, XMVECTOR position, XMVECTOR forward, XMVECTOR up)
+   {
+       if (camId == NullEntity)
+       {
+           m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat, position, forward, up);
+           return;
+       }
+
+       if (camId == m_activeCameraEntity)
+       {
+           m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat, position, forward, up);
+           Camera& camData = m_registry.get<Camera>(camId);
+           XMStoreFloat4x4A(&camData.m_viewProjMatrix, m_cameraViewProjMat);
+           return;
+       }
+
+       Camera& camData = m_registry.get<Camera>(camId);
+       XMMATRIX camProjMat = XMLoadFloat4x4A(&camData.m_projMatrix);
+       XMMATRIX camViewProjMat = MakeViewProjMatrix(camProjMat, position, forward, up);
+       XMStoreFloat4x4A(&camData.m_viewProjMatrix, camViewProjMat);
+   }
     
    /////////////////////    IInputListener Start
+#if 0
    void D3D12Renderer::OnMoveForward(float value, bool isDiscrete)
    {
        if (!isDiscrete)
@@ -541,6 +610,7 @@ namespace GAL
        //Save the new forward vector.
        XMStoreFloat3(&m_cameraForward, newForward);
    }
+#endif
 
    /////////////////////    IInputListener End
 
@@ -611,9 +681,7 @@ namespace GAL
    void D3D12Renderer::CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix)
    {
        XMMATRIX objWorldMat = XMLoadFloat4x4(&objWorldMatrix);
-       XMMATRIX cameraViewMat = XMLoadFloat4x4(&m_cameraViewMat);
-       XMMATRIX cameraProjMat = XMLoadFloat4x4(&m_cameraProjMat);
-       XMMATRIX wvpMat = objWorldMat * cameraViewMat * cameraProjMat;
+       XMMATRIX wvpMat = objWorldMat * m_cameraViewProjMat;
 
        //Remember that HLSL is column major, so we need to transpose.
        XMStoreFloat4x4(&wvpMatrixOut, XMMatrixTranspose(wvpMat));

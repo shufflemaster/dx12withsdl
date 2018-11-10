@@ -171,10 +171,12 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Components\CameraComponent.h" />
     <ClInclude Include="Components\InputComponent.h" />
     <ClInclude Include="Components\MeshComponent.h" />
     <ClInclude Include="Components\RendererIdComponent.h" />
     <ClInclude Include="Components\TransformComponent.h" />
+    <ClInclude Include="D3D12Renderer\Camera.h" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\D3D12Renderer.h" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceLoaders\GpuMeshLoader.h" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceManager.h" />
@@ -200,15 +202,18 @@
     <ClInclude Include="include\VertexTypes.h" />
     <ClInclude Include="ResourceLoaders\TriangleMeshLoader.h" />
     <ClInclude Include="ResourceTypes\Mesh.h" />
+    <ClInclude Include="Systems\CameraSystem.h" />
     <ClInclude Include="Systems\InputSystem.h" />
     <ClInclude Include="Systems\RenderSystem.h" />
     <ClInclude Include="Systems\System.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Components\CameraComponent.cpp" />
     <ClCompile Include="Components\InputComponent.cpp" />
     <ClCompile Include="Components\MeshComponent.cpp" />
     <ClCompile Include="Components\RendererIdComponent.cpp" />
     <ClCompile Include="Components\TransformComponent.cpp" />
+    <ClCompile Include="D3D12Renderer\Camera.cpp" />
     <ClCompile Include="D3D12Renderer\D3D12Renderer.cpp" />
     <ClCompile Include="D3D12Renderer\GpuResourceLoaders\GpuMeshLoader.cpp" />
     <ClCompile Include="D3D12Renderer\GpuResourceManager.cpp" />
@@ -227,6 +232,7 @@
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="ResourceTypes\Mesh.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Systems\CameraSystem.cpp" />
     <ClCompile Include="Systems\InputSystem.cpp" />
     <ClCompile Include="Systems\RenderSystem.cpp" />
     <ClCompile Include="Universe.cpp" />

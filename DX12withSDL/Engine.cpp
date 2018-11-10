@@ -5,6 +5,7 @@
 #include "VertexTypes.h"
 #include "Components/MeshComponent.h"
 #include "Components/TransformComponent.h"
+#include "Components/CameraComponent.h"
 #include "HashedString.h"
 
 #include "Engine.h"
@@ -12,6 +13,7 @@
 #include "Universe.h"
 
 #include "Systems/InputSystem.h"
+#include "Systems/CameraSystem.h"
 #include "Systems/RenderSystem.h"
 #include "ResourceTypes/Mesh.h"
 #include "ResourceLoaders/TriangleMeshLoader.h"
@@ -143,11 +145,56 @@ namespace GAL
         }
 
         //Create the camera entity
+        auto camEntity = m_universe.CreteEntity();
+        //camera Transform.
+        TransformComponent& transformComponent = registry.assign<TransformComponent>(camEntity);
+        transformComponent.SetRight(   XMFLOAT4A(1.0f, 0.0f,  0.0f, 0.0f));
+        transformComponent.SetUp(      XMFLOAT4A(0.0f, 1.0f,  0.0f, 0.0f));
+        transformComponent.SetForward( XMFLOAT4A(0.0f, 0.0f,  1.0f, 0.0f));
+        transformComponent.SetPosition(XMFLOAT4A(0.0f, 0.0f, -4.0f, 1.0f));
+        CameraComponent& cameraComponent = registry.assign<CameraComponent>(camEntity);
+        cameraComponent.m_fieldOfViewDegrees = 45.0f;
+        cameraComponent.m_nearClipDistance = 0.1f;
+        cameraComponent.m_farClipDistance = 1000.0f;
+        cameraComponent.m_speed = 4.0f; //4 world units per second.
+        cameraComponent.m_isActive = true;
+
+        //Create the entity used to register input events we care about.
+        //Could be attached directly to the camera, but ideally we want something that simply generates
+        //Input events for whomever cares.
+        auto inputEntity = m_universe.CreteEntity();
+        InputComponent& inputComponent = registry.assign<InputComponent>(inputEntity);
+        auto evtId = inputComponent.AddEventNameHelper("MoveForward");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_W, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_UP, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_S, -1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_DOWN, -1.0f, 0.0f);
+        evtId = inputComponent.AddEventNameHelper("MoveRight");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_D, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_RIGHT, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_A, -1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_LEFT, -1.0f, 0.0f);
+        evtId = inputComponent.AddEventNameHelper("MoveUp");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_Q, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_E, -1.0f, 0.0f);
+        evtId = inputComponent.AddEventNameHelper("MouseMiddleButton");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_BUTTON_MIDDLE, 1.0f, 0.0f);
+        evtId = inputComponent.AddEventNameHelper("MouseRightButton");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_BUTTON_RIGHT, 1.0f, 0.0f);
+        //MouseDeltaX + MouseMiddleButton = MoveRight
+        //MouseDeltaX + MouseRightButton = MoveYaw
+        evtId = inputComponent.AddEventNameHelper("MouseDeltaX");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_X, 1.0f, 0.0f);
+        //MouseDeltaY + MouseMiddleButton = MoveUp
+        //MouseDeltaY + MouseRightButton = MovePitch
+        evtId = inputComponent.AddEventNameHelper("MouseDeltaY");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_X, 1.0f, 0.0f);
 
 
 
         //GAL::RenderNode* node = new GAL::RenderNode();
         //renderer.AddRenderNode(node);
+
 
         return true;
     }
@@ -156,6 +203,7 @@ namespace GAL
     {
         //The order in which we add it here determines the order of Tick Update.
         m_inputSystem = static_cast<InputSystem*>(m_universe.CreateAndAddSystem<InputSystem>(hWnd));
+        m_cameraSystem = static_cast<CameraSystem*>(m_universe.CreateAndAddSystem<CameraSystem>(&m_renderer));
         m_renderSystem = static_cast<RenderSystem*>(m_universe.CreateAndAddSystem<RenderSystem>(&m_renderer));
 
         m_universe.InitializeSystems();

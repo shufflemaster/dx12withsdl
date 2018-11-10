@@ -144,6 +144,15 @@
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceLoaders\GpuMeshLoader.h">
       <Filter>Source Files\D3D12Renderer\include\d3d12renderer\GpuResourceLoaders</Filter>
     </ClInclude>
+    <ClInclude Include="Components\CameraComponent.h">
+      <Filter>Source Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\CameraSystem.h">
+      <Filter>Source Files\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer\Camera.h">
+      <Filter>Source Files\D3D12Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -205,6 +214,15 @@
     </ClCompile>
     <ClCompile Include="Components\RendererIdComponent.cpp">
       <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\CameraComponent.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\CameraSystem.cpp">
+      <Filter>Source Files\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer\Camera.cpp">
+      <Filter>Source Files\D3D12Renderer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

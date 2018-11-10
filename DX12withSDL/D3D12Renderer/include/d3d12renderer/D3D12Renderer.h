@@ -69,7 +69,6 @@ namespace GAL
         bool CreateRootSignature(); //Init
         bool CreatePipelineStateObject(); //Init
         bool CreateConstantBuffer(); //Init
-        void UpdateCameraAndProjectionMatrices(float deltaTimeMillis);
 
         void PreRender();
         void PostRender();

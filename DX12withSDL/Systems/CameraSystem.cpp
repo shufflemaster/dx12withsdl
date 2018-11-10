@@ -225,8 +225,6 @@ namespace GAL
 
 
         XMVECTOR camForward = XMLoadFloat4A(tc.GetForward());
-
-
         XMVECTOR camRight = XMLoadFloat4A(tc.GetRight());
         XMMATRIX matPitch = XMMatrixRotationAxis(camRight, pitchRads);
 

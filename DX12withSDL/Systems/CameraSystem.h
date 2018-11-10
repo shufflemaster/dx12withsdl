@@ -31,10 +31,14 @@ namespace GAL
     private:
         D3D12Renderer* m_renderer;
         EntityId m_activeCameraId;
+        float m_totalPitchDegrees;
         XMFLOAT4A m_cameraInput;
 
         bool m_mouseMiddleButton;
         bool m_mouseRightButton;
+
+        void UpdateCameraYaw(float yawRads);
+        void UpdateCameraPitch(float pitchRads);
     };
 
 }; //namespace GAL

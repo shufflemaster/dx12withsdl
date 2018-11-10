@@ -3,6 +3,8 @@
 #include "Universe.h"
 #include "InputSystem.h"
 
+#include "LogUtils.h"
+
 namespace GAL
 {
     InputSystem::InputSystem(Universe* universe, HWND hWnd) : System(universe)
@@ -98,32 +100,13 @@ namespace GAL
 
     void InputSystem::ProcessMouseMotionEvent(const SDL_MouseMotionEvent& motionEvent)
     {
-#if 0
-        bool isMiddleButtonPressed = motionEvent.state & SDL_BUTTON(SDL_BUTTON_MIDDLE);
-        if (isMiddleButtonPressed)
-        {
-            float mouseDeltaX = (float)motionEvent.xrel / (float)m_windowWidth;
-            for (auto listener : m_listeners) listener->OnMoveRight(mouseDeltaX * 5.0f, true);
-
-            float mouseDeltaY = (float)motionEvent.yrel / (float)m_windowHeight;
-            for (auto listener : m_listeners) listener->OnMoveUp(-mouseDeltaY * 5.0f, true);
-
-            return;
-        }
- 
-        bool isRightButtonPressed = motionEvent.state & SDL_BUTTON(SDL_BUTTON_RIGHT);
-
-        if (!isRightButtonPressed)
-            return;
-        float mouseDeltaX = (float)motionEvent.xrel / (float)m_windowWidth;
-        float mouseDeltaY = (float)motionEvent.yrel / (float)m_windowHeight;
-#endif
-
         float mouseDeltaX = (float)motionEvent.xrel / (float)m_windowWidth;
         TriggerIfRegistered(InputComponent::eInputName::MOUSE_DELTA_X, mouseDeltaX);
 
         float mouseDeltaY = (float)motionEvent.yrel / (float)m_windowHeight;
         TriggerIfRegistered(InputComponent::eInputName::MOUSE_DELTA_Y, mouseDeltaY);
+
+        //ODINFO("raw deltaX = %f, raw deltaY=%f", mouseDeltaX, mouseDeltaY);
     }
 
     void InputSystem::ProcessMouseButtonEvent(const SDL_MouseButtonEvent& buttonEvent)

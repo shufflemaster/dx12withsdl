@@ -18,6 +18,7 @@ namespace GAL
 
     void CameraSystem::Initialize()
     {
+        m_totalPitchDegrees = 0.0f;
         m_mouseMiddleButton = false;
         m_mouseRightButton = false;
         m_cameraInput = XMFLOAT4A(0, 0, 0, 0);
@@ -140,17 +141,112 @@ namespace GAL
         if (evtHash == entt::hashed_string("MouseDeltaX"))
         {
             //MouseDeltaX + MouseMiddleButton = MoveRight
+            if (m_mouseMiddleButton)
+            {
+
+            }
             //MouseDeltaX + MouseRightButton = MoveYaw
+            if (m_mouseRightButton)
+            {
+                UpdateCameraYaw(evt.m_value);
+            }
             return;
         }
 
         if (evtHash == entt::hashed_string("MouseDeltaY"))
         {
             //MouseDeltaY + MouseMiddleButton = MoveUp
+            if (m_mouseMiddleButton)
+            {
+
+            }
             //MouseDeltaY + MouseRightButton = MovePitch
+            if (m_mouseRightButton)
+            {
+                UpdateCameraPitch(evt.m_value);
+            }
             return;
         }
 
+    }
+
+    void CameraSystem::UpdateCameraYaw(float yawRads)
+    {
+        if (m_activeCameraId == NullEntity)
+            return;
+
+        //ODINFO("yaw = %f", yawRads);
+
+        Registry& registry = m_universe->GetRegistry();
+        TransformComponent& tc = registry.get<TransformComponent>(m_activeCameraId);
+        RendererIdComponent& ric = registry.get<RendererIdComponent>(m_activeCameraId);
+        CameraComponent& cic = registry.get<CameraComponent>(m_activeCameraId);
+
+
+        XMVECTOR camForward = XMLoadFloat4A(tc.GetForward());
+
+        XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        XMMATRIX matYaw = XMMatrixRotationAxis(camUp, yawRads);
+
+        //transform forward
+        camForward = XMVector3Transform(camForward,
+            matYaw);
+        camForward = XMVector3Normalize(camForward);
+
+        //Recalculate Right
+        XMVECTOR camRight = XMVector3Cross(camUp, camForward);
+        camRight = XMVector3Normalize(camRight);
+
+        //Save the new orientation vectors.
+        XMStoreFloat4A(tc.GetRight(), camRight);
+        XMStoreFloat4A(tc.GetForward(), camForward);
+
+        XMVECTOR position = XMLoadFloat4A(tc.GetPosition());
+        m_renderer->UpdateCamera(ric.m_rendererEntityId, position, camForward, camUp);
+    }
+
+    void CameraSystem::UpdateCameraPitch(float pitchRads)
+    {
+        if (m_activeCameraId == NullEntity)
+            return;
+
+        float totalPitchDegrees = m_totalPitchDegrees + pitchRads * (180.0f / 3.14159f);
+        //ODINFO("delta pitch rads= %f, total pitch deg=%f", pitchRads, totalPitchDegrees);
+        if (fabsf(totalPitchDegrees) > 70.0f)
+        {
+            return;
+        }
+        m_totalPitchDegrees = totalPitchDegrees;
+          
+        Registry& registry = m_universe->GetRegistry();
+        TransformComponent& tc = registry.get<TransformComponent>(m_activeCameraId);
+        RendererIdComponent& ric = registry.get<RendererIdComponent>(m_activeCameraId);
+        CameraComponent& cic = registry.get<CameraComponent>(m_activeCameraId);
+
+
+        XMVECTOR camForward = XMLoadFloat4A(tc.GetForward());
+
+
+        XMVECTOR camRight = XMLoadFloat4A(tc.GetRight());
+        XMMATRIX matPitch = XMMatrixRotationAxis(camRight, pitchRads);
+
+        //transform forward vector
+        camForward = XMVector3Transform(camForward,
+            matPitch);
+        camForward = XMVector3Normalize(camForward);
+
+        //Recalculate Up
+        XMVECTOR camUp = XMVector3Cross(camForward, camRight);
+        camUp = XMVector3Normalize(camUp);
+
+        //Save the new orientation vectors.
+        XMStoreFloat4A(tc.GetUp(), camUp);
+        XMStoreFloat4A(tc.GetForward(), camForward);
+
+        //DirectX Math API requires always the up to be a perfect axis.
+        camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        XMVECTOR position = XMLoadFloat4A(tc.GetPosition());
+        m_renderer->UpdateCamera(ric.m_rendererEntityId, position, camForward, camUp);
     }
 
 }; //namespace GAL

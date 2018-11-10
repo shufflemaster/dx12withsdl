@@ -184,11 +184,11 @@ namespace GAL
         //MouseDeltaX + MouseMiddleButton = MoveRight
         //MouseDeltaX + MouseRightButton = MoveYaw
         evtId = inputComponent.AddEventNameHelper("MouseDeltaX");
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_X, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_X, 1.0f, 0.001f);
         //MouseDeltaY + MouseMiddleButton = MoveUp
         //MouseDeltaY + MouseRightButton = MovePitch
         evtId = inputComponent.AddEventNameHelper("MouseDeltaY");
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_X, 1.0f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_Y, -1.0f, 0.001f);
 
 
 

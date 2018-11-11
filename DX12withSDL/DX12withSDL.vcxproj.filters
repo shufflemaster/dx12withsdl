@@ -153,6 +153,9 @@
     <ClInclude Include="D3D12Renderer\Camera.h">
       <Filter>Source Files\D3D12Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="ResourceLoaders\SphereMeshLoader.h">
+      <Filter>Source Files\ResourceLoaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -223,6 +226,9 @@
     </ClCompile>
     <ClCompile Include="D3D12Renderer\Camera.cpp">
       <Filter>Source Files\D3D12Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceLoaders\SphereMeshLoader.cpp">
+      <Filter>Source Files\ResourceLoaders</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -14,7 +14,8 @@ namespace GAL
 
         //When the camera is listening to input. The speed is used
         //to determine how fast to move the camera.
-        float m_speed; //World units per second
+        float m_translationSpeed; //World units per second
+        float m_rotationSpeed; //Degrees per second.
 
         //If you add multiple cameras the last active one is the active camera.
         bool m_isActive;

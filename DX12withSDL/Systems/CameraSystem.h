@@ -32,7 +32,8 @@ namespace GAL
         D3D12Renderer* m_renderer;
         EntityId m_activeCameraId;
         float m_totalPitchDegrees;
-        XMFLOAT4A m_cameraInput;
+        XMFLOAT4A m_cameraTranslationInput;
+        XMFLOAT4A m_cameraRotationInput;
 
         bool m_mouseMiddleButton;
         bool m_mouseRightButton;

@@ -10,7 +10,7 @@
 
 namespace GAL
 {
-    static const XMVECTOR s_smallVector = XMVectorSet(0.000001f, 0.000001f, 0.000001f, 0.000001f);
+    static float kMaxPitchDegrees = 70.0f;
 
     CameraSystem::~CameraSystem()
     {
@@ -21,7 +21,8 @@ namespace GAL
         m_totalPitchDegrees = 0.0f;
         m_mouseMiddleButton = false;
         m_mouseRightButton = false;
-        m_cameraInput = XMFLOAT4A(0, 0, 0, 0);
+        m_cameraTranslationInput = XMFLOAT4A(0, 0, 0, 0);
+        m_cameraRotationInput = XMFLOAT4A(0, 0, 0, 0);
 
         m_activeCameraId = NullEntity;
         RenderEntityId activeRendCam = NullEntity;
@@ -65,41 +66,85 @@ namespace GAL
         if (m_activeCameraId == NullEntity)
             return;
 
+        bool doUpdate = false;
+        float deltaTimeSecs = deltaTimeMillis * 0.001f;
+
         TransformComponent& tc = registry.get<TransformComponent>(m_activeCameraId);
         RendererIdComponent& ric = registry.get<RendererIdComponent>(m_activeCameraId);
         CameraComponent& cic = registry.get<CameraComponent>(m_activeCameraId);
 
-        // build view matrix
-        XMVECTOR position = XMLoadFloat4A(tc.GetPosition());
-        // Calculate how much to move in the current camera direction.
-        XMVECTOR camForward = XMLoadFloat4A(tc.GetForward());
-        XMVECTOR forwardDisplacement = XMVectorScale(camForward, m_cameraInput.z * cic.m_speed * (deltaTimeMillis * 0.001f));
-
-        //XMVECTOR camUp = XMLoadFloat4A(tc.GetUp());//XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-        XMVECTOR camRight = XMLoadFloat4A(tc.GetRight());//XMVector3Cross(camUp, camForward);
-
-        //camRight = XMVector3Normalize(camRight);
-        XMVECTOR rightDisplacement = XMVectorScale(camRight, m_cameraInput.x * cic.m_speed * (deltaTimeMillis * 0.001f));
-
-        //camUp = XMVector3Cross(camForward, camRight);
-        //camUp = XMVector3Normalize(camUp);
+        XMVECTOR camRight = XMLoadFloat4A(tc.GetRight());
         XMVECTOR camUp = XMLoadFloat4A(tc.GetUp());
-        XMVECTOR upDisplacement = XMVectorScale(camUp, m_cameraInput.y * cic.m_speed * (deltaTimeMillis * 0.001f));
+        XMVECTOR camForward = XMLoadFloat4A(tc.GetForward());
+        XMVECTOR position = XMLoadFloat4A(tc.GetPosition());
 
-        XMVECTOR deltaTotal = XMVectorAdd(forwardDisplacement, rightDisplacement);
-        deltaTotal  = XMVectorAdd(deltaTotal, upDisplacement);
-        if ( XMVector3NearEqual(XMVector3LengthSq(deltaTotal), XMVectorZero(), s_smallVector) )
+        //First let's update the orientation if needed.
+        if ((m_cameraRotationInput.x != 0.0f) || (m_cameraRotationInput.y != 0.0f))
+        {
+            doUpdate = true;
+
+            float yawRads = cic.m_rotationSpeed * deltaTimeSecs * m_cameraRotationInput.y;
+            XMMATRIX matYaw = XMMatrixRotationAxis(camUp, yawRads);
+
+            float pitchRads = cic.m_rotationSpeed * deltaTimeSecs * m_cameraRotationInput.x;
+
+            float totalPitchDegrees = m_totalPitchDegrees + pitchRads * (180.0f / 3.14159f);
+            XMMATRIX matPitch;
+            if (totalPitchDegrees <= kMaxPitchDegrees)
+            {
+                matPitch = XMMatrixRotationAxis(camRight, pitchRads);
+                m_totalPitchDegrees = totalPitchDegrees;
+            }
+            else
+            {
+                matPitch = XMMatrixRotationAxis(camRight, 0.0f);
+            }
+
+            XMMATRIX finalMat = XMMatrixMultiply(matYaw, matPitch);
+
+            //transform forward
+            camForward = XMVector3Transform(camForward,
+                finalMat);
+            camForward = XMVector3Normalize(camForward);
+
+            //Recalculate Right
+            camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+            XMVECTOR camRight = XMVector3Cross(camUp, camForward);
+            camRight = XMVector3Normalize(camRight);
+
+            //Recalculate Up
+            camUp = XMVector3Cross(camForward, camRight);
+            camUp = XMVector3Normalize(camUp);
+
+            //Save the new orientation vectors.
+            XMStoreFloat4A(tc.GetUp(), camUp);
+            XMStoreFloat4A(tc.GetRight(), camRight);
+            XMStoreFloat4A(tc.GetForward(), camForward);
+        }
+
+        if ((m_cameraTranslationInput.x != 0.0f) || (m_cameraTranslationInput.y != 0.0f) || (m_cameraTranslationInput.z != 0.0f))
+        {
+            doUpdate = true;
+
+            // Calculate how much to move in the current camera direction.
+            XMVECTOR forwardDisplacement = XMVectorScale(camForward, m_cameraTranslationInput.z * cic.m_translationSpeed * deltaTimeSecs);
+            XMVECTOR rightDisplacement = XMVectorScale(camRight, m_cameraTranslationInput.x * cic.m_translationSpeed * deltaTimeSecs);
+            XMVECTOR upDisplacement = XMVectorScale(camUp, m_cameraTranslationInput.y * cic.m_translationSpeed * deltaTimeSecs);
+            XMVECTOR deltaTotal = XMVectorAdd(forwardDisplacement, rightDisplacement);
+            deltaTotal = XMVectorAdd(deltaTotal, upDisplacement);
+            //Move the camera.
+            position = XMVectorAdd(position, deltaTotal);
+            //Store the new position
+            XMStoreFloat4A(tc.GetPosition(), position);
+        }
+
+        //Notify the renderer
+        if (!doUpdate)
         {
             return;
         }
 
-        //Move the camera.
-        position += deltaTotal;
-
-        //Store the new position
-        XMStoreFloat4A(tc.GetPosition(), position);
-
-        //Notify the renderer
+        camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
         m_renderer->UpdateCamera(ric.m_rendererEntityId, position, camForward, camUp);
     }
 
@@ -110,19 +155,19 @@ namespace GAL
 
         if (evtHash == entt::hashed_string("MoveForward"))
         {
-            m_cameraInput.z = evt.m_value;
+            m_cameraTranslationInput.z = evt.m_value;
             return;
         }
 
         if (evtHash == entt::hashed_string("MoveRight"))
         {
-            m_cameraInput.x = evt.m_value;
+            m_cameraTranslationInput.x = evt.m_value;
             return;
         }
 
         if (evtHash == entt::hashed_string("MoveUp"))
         {
-            m_cameraInput.y = evt.m_value;
+            m_cameraTranslationInput.y = evt.m_value;
             return;
         }
 
@@ -170,12 +215,12 @@ namespace GAL
 
         if (evtHash == entt::hashed_string("RotatePitch"))
         {
-            UpdateCameraPitch(evt.m_value);
+            m_cameraRotationInput.x = evt.m_value;
             return;
         }
         if (evtHash == entt::hashed_string("RotateYaw"))
         {
-            UpdateCameraYaw(evt.m_value);
+            m_cameraRotationInput.y = evt.m_value;
             return;
         }
 
@@ -196,12 +241,11 @@ namespace GAL
 
         XMVECTOR camForward = XMLoadFloat4A(tc.GetForward());
 
-        XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        XMVECTOR camUp = XMLoadFloat4A(tc.GetUp());
         XMMATRIX matYaw = XMMatrixRotationAxis(camUp, yawRads);
 
         //transform forward
-        camForward = XMVector3Transform(camForward,
-            matYaw);
+        camForward = XMVector3Transform(camForward, matYaw);
         camForward = XMVector3Normalize(camForward);
 
         //Recalculate Right
@@ -213,6 +257,7 @@ namespace GAL
         XMStoreFloat4A(tc.GetForward(), camForward);
 
         XMVECTOR position = XMLoadFloat4A(tc.GetPosition());
+        camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
         m_renderer->UpdateCamera(ric.m_rendererEntityId, position, camForward, camUp);
     }
 
@@ -223,7 +268,7 @@ namespace GAL
 
         float totalPitchDegrees = m_totalPitchDegrees + pitchRads * (180.0f / 3.14159f);
         //ODINFO("delta pitch rads= %f, total pitch deg=%f", pitchRads, totalPitchDegrees);
-        if (fabsf(totalPitchDegrees) > 70.0f)
+        if (fabsf(totalPitchDegrees) > kMaxPitchDegrees)
         {
             return;
         }

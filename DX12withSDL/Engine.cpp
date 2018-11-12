@@ -156,7 +156,8 @@ namespace GAL
         cameraComponent.m_fieldOfViewDegrees = 45.0f;
         cameraComponent.m_nearClipDistance = 0.1f;
         cameraComponent.m_farClipDistance = 1000.0f;
-        cameraComponent.m_speed = 4.0f; //4 world units per second.
+        cameraComponent.m_translationSpeed = 4.0f; //4 world units per second.
+        cameraComponent.m_rotationSpeed = 30.0f; //90 degrees per second.
         cameraComponent.m_isActive = true;
 
         //Create the entity used to register input events we care about.

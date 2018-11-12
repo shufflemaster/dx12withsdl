@@ -10,7 +10,9 @@ namespace GAL
     {
     public:
         SphereMeshLoader() = default;
-        std::shared_ptr<Mesh> Load(const std::string& filename, float radius, float red, float green, float blue) const;
+
+        //Negative color means random color.
+        std::shared_ptr<Mesh> Load(const std::string& filename, float radius, float stepSizeDegrees, float red = -1.0f, float green = -1.0f, float blue = -1.0f) const;
     };
 } //namespace GAL;
 

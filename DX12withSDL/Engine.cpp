@@ -2,7 +2,8 @@
 
 #include "PerfCounter.h"
 #include "TimeCounter.h"
-#include "VertexTypes.h"
+#include "CommonHelpers.h"
+//#include "VertexTypes.h"
 #include "Components/MeshComponent.h"
 #include "Components/TransformComponent.h"
 #include "Components/CameraComponent.h"
@@ -17,27 +18,9 @@
 #include "Systems/RenderSystem.h"
 #include "ResourceTypes/Mesh.h"
 #include "ResourceLoaders/TriangleMeshLoader.h"
+#include "ResourceLoaders/SphereMeshLoader.h"
 
 using namespace DirectX;
-
-//helper for LoadLevel
-static inline float randFloat(float min, float max)
-{
-    int random_number = std::rand();
-    float normalized = (float)random_number / (float)RAND_MAX;
-    float retVal = (max - min)*normalized + min;
-    return retVal;
-}
-
-//helper for LoadLevel
-static void GenerateRandomWorldMatrix(XMFLOAT4X4& worldMatOut,
-    float minX, float maxX,
-    float minY, float maxY,
-    float minZ, float maxZ)
-{
-    XMMATRIX tmpMat = XMMatrixTranslation(randFloat(minX, maxX), randFloat(minY, maxY), randFloat(minZ, maxZ));
-    XMStoreFloat4x4(&worldMatOut, tmpMat);
-}
 
 namespace GAL
 {
@@ -115,6 +98,7 @@ namespace GAL
         MeshCache& meshCache = m_universe.GetResourceManager().GetMeshCache();
         Registry& registry = m_universe.GetRegistry();
 
+#if 0
         //Create all the triangle entities.
         const int kMaxTriangles = 1000;
         std::stringstream meshResourceNameStream;
@@ -143,6 +127,22 @@ namespace GAL
             TransformComponent& transformComponent = registry.assign<TransformComponent>(newEntity);
             ::GenerateRandomWorldMatrix(transformComponent.m_matrix, -5.0f, 5.0f, -5.0f, 5.0f, 5.0f, 10.0f);
         }
+#endif
+        //Create spehre
+        auto sphereEntity = m_universe.CreteEntity();
+        MeshComponent& meshComponent = registry.assign<MeshComponent>(sphereEntity);
+        
+        meshComponent.m_meshHandle = meshCache.AddResource<SphereMeshLoader>("assets/mesh/sphere", 1.0f, 5.0f);
+        if (meshComponent.m_meshHandle < 0)
+        {
+            ODERROR("Failed to create mesh for spehre");
+            return false;
+        }
+
+        //Add the transform component
+        TransformComponent& tc = registry.assign<TransformComponent>(sphereEntity);
+        XMMATRIX identityMat = XMMatrixIdentity();
+        XMStoreFloat4x4A(&tc.m_matrix, identityMat);
 
         //Create the camera entity
         auto camEntity = m_universe.CreteEntity();
@@ -166,14 +166,10 @@ namespace GAL
         InputComponent& inputComponent = registry.assign<InputComponent>(inputEntity);
         auto evtId = inputComponent.AddEventNameHelper("MoveForward");
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_W, 1.0f, 0.0f);
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_UP, 1.0f, 0.0f);
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_S, -1.0f, 0.0f);
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_DOWN, -1.0f, 0.0f);
         evtId = inputComponent.AddEventNameHelper("MoveRight");
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_D, 1.0f, 0.0f);
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_RIGHT, 1.0f, 0.0f);
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_A, -1.0f, 0.0f);
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_LEFT, -1.0f, 0.0f);
         evtId = inputComponent.AddEventNameHelper("MoveUp");
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_Q, 1.0f, 0.0f);
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_E, -1.0f, 0.0f);
@@ -189,12 +185,12 @@ namespace GAL
         //MouseDeltaY + MouseRightButton = MovePitch
         evtId = inputComponent.AddEventNameHelper("MouseDeltaY");
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_Y, -1.0f, 0.001f);
-
-
-
-        //GAL::RenderNode* node = new GAL::RenderNode();
-        //renderer.AddRenderNode(node);
-
+        evtId = inputComponent.AddEventNameHelper("RotatePitch");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_UP, 0.02f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_DOWN, -0.02f, 0.0f);
+        evtId = inputComponent.AddEventNameHelper("RotateYaw");
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_LEFT, -0.02f, 0.0f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_RIGHT, 0.02f, 0.0f);
 
         return true;
     }

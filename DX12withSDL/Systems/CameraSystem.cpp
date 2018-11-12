@@ -168,6 +168,17 @@ namespace GAL
             return;
         }
 
+        if (evtHash == entt::hashed_string("RotatePitch"))
+        {
+            UpdateCameraPitch(evt.m_value);
+            return;
+        }
+        if (evtHash == entt::hashed_string("RotateYaw"))
+        {
+            UpdateCameraYaw(evt.m_value);
+            return;
+        }
+
     }
 
     void CameraSystem::UpdateCameraYaw(float yawRads)

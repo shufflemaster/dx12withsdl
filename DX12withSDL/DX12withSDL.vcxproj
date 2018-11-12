@@ -171,6 +171,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CommonHelpers.h" />
     <ClInclude Include="Components\CameraComponent.h" />
     <ClInclude Include="Components\InputComponent.h" />
     <ClInclude Include="Components\MeshComponent.h" />

@@ -156,6 +156,9 @@
     <ClInclude Include="ResourceLoaders\SphereMeshLoader.h">
       <Filter>Source Files\ResourceLoaders</Filter>
     </ClInclude>
+    <ClInclude Include="CommonHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

@@ -91,7 +91,7 @@ namespace GAL
 
         uint32_t totalVertices = 0;
         uint32_t totalIndices = 0;
-        for (int i = 0; i < numMeshes; i++)
+        for (uint32_t i = 0; i < numMeshes; i++)
         {
             totalVertices += allMeshes[i]->GetNumVertices();
             totalIndices += allMeshes[i]->GetNumIndices();
@@ -103,14 +103,14 @@ namespace GAL
         P3F_C4F* dstVertices = retMesh->m_vertices;
         DWORD* dstIndices = retMesh->m_indices;
         DWORD indexOffset = 0;
-        for (int i = 0; i < numMeshes; i++)
+        for (uint32_t i = 0; i < numMeshes; i++)
         {
             memcpy(dstVertices, allMeshes[i]->GetVertices(), sizeof(P3F_C4F) * allMeshes[i]->GetNumVertices());
 
             //The indices need shifting!
             uint32_t meshNumIndices = allMeshes[i]->GetNumIndices();
             const DWORD* meshIndices = allMeshes[i]->GetIndices();
-            for (int index = 0; index < meshNumIndices; index++)
+            for (uint32_t index = 0; index < meshNumIndices; index++)
             {
                 dstIndices[index] = meshIndices[index] + indexOffset;
             }

@@ -52,7 +52,7 @@ namespace GAL
                 float rndRed = red < 0.0f ? randFloat(0.0f, 1.0f) : red;
                 float rndGreen = green < 0.0f ? randFloat(0.0f, 1.0f) : green;
                 float rndBlue = blue < 0.0f ? randFloat(0.0f, 1.0f) : blue;
-                retMesh->m_vertices[vertIdx] = { {  x,  y, 0}, {rndRed, rndGreen, rndBlue, 1.0f} };
+                retMesh->m_vertices[vertIdx] = { {  x,  y, 0}, {planeNormal.x, planeNormal.y, planeNormal.z},  {rndRed, rndGreen, rndBlue, 1.0f} };
                 //ODINFO("idx=%d, Theta=%f, Sigma=%f, x=%f, y=%f, z=%f", vertIdx, theta, sigma, x, y, z);
                 y -= rowHeight;
                 ++vertIdx;
@@ -108,9 +108,14 @@ namespace GAL
        
         for (int i = 0; i < numVertices; i++)
         {
-            XMVECTOR v = XMLoadFloat3((const XMFLOAT3 *)&(retMesh->m_vertices[i].pos[0]));
+            XMVECTOR v = XMLoadFloat3((const XMFLOAT3 *)&(retMesh->m_vertices[i].position[0]));
             v = XMVector3Transform(v, rotMatrix);
-            XMStoreFloat3((XMFLOAT3 *)&(retMesh->m_vertices[i].pos[0]), v);
+            XMStoreFloat3((XMFLOAT3 *)&(retMesh->m_vertices[i].position[0]), v);
+#if 0
+            XMVECTOR n = XMLoadFloat3((const XMFLOAT3 *)&(retMesh->m_vertices[i].normal[0]));
+            n = XMVector3TransformNormal(n, rotMatrix);
+            XMStoreFloat3((XMFLOAT3 *)&(retMesh->m_vertices[i].normal[0]), n);
+#endif
         }
         
         return retMesh;

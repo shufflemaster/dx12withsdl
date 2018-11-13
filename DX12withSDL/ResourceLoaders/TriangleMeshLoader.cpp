@@ -12,9 +12,20 @@ namespace GAL
 
         retMesh->Allocate(3, 3);
         
-        retMesh->m_vertices[0] = { {  0.0f,  size, 0.0f}, {red, green, blue, 1.0f} };
-        retMesh->m_vertices[1] = { {  size, -size, 0.0f}, {red, green, blue, 1.0f} };
-        retMesh->m_vertices[2] = { { -size, -size, 0.0f}, {red, green, blue, 1.0f} };
+        /*
+                +Y
+                |
+                0         y = size
+               /|\
+         -X --/---\-- +X
+             /  |  \
+            2-------1     y = -size
+                |
+                -Y
+        */
+        retMesh->m_vertices[0] = { {  0.0f,  size, 0.0f}, {0, 0, -1}, {red, green, blue, 1.0f} };
+        retMesh->m_vertices[1] = { {  size, -size, 0.0f}, {0, 0, -1}, {red, green, blue, 1.0f} };
+        retMesh->m_vertices[2] = { { -size, -size, 0.0f}, {0, 0, -1}, {red, green, blue, 1.0f} };
         
         retMesh->m_indices[0] = 0;
         retMesh->m_indices[1] = 1;

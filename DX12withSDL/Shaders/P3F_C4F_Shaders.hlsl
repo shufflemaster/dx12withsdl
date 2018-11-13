@@ -14,11 +14,13 @@ cbuffer ConstantBuffer : register(b0)
 };
 
 // Vertex Shader
-VSOutput VSMain(float3 pos : POSITION, float4 color : COLOR)
+VSOutput VSMain(float3 pos : POSITION, float3 normal : NORMAL, float4 color : COLOR)
 {
+    float3 light = normalize(float3(1.0, -1.0f, 0.0f));
     VSOutput vsOut;
     vsOut.pos = mul(float4(pos, 1.0), wvpMat);
-    vsOut.color = color;
+    float dotto = -dot(normal, light);
+    vsOut.color = color * dotto;
     return vsOut;
 }
 

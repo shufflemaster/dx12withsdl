@@ -48,13 +48,16 @@ namespace GAL
                 cntSigma <= numRowsSigma;
                 ++cntSigma)
             {
-                float x = radius * sinf(sigma)*sinf(theta);
-                float y = radius * cosf(sigma);
-                float z = radius * sinf(sigma)*cosf(theta);
+                float nX = sinf(sigma)*sinf(theta);
+                float nY = cosf(sigma);
+                float nZ = sinf(sigma)*cosf(theta);
+                float x = radius * nX;
+                float y = radius * nY;
+                float z = radius * nZ;
                 float rndRed = red < 0.0f ? randFloat(0.0f, 1.0f) : red;
                 float rndGreen = green < 0.0f ? randFloat(0.0f, 1.0f) : green;
                 float rndBlue = blue < 0.0f ? randFloat(0.0f, 1.0f) : blue;
-                retMesh->m_vertices[vertIdx] = { {  x,  y, z}, {rndRed, rndGreen, rndBlue, 1.0f} };
+                retMesh->m_vertices[vertIdx] = { {  x,  y, z}, { nX, nY, nZ}, {rndRed, rndGreen, rndBlue, 1.0f} };
                 //ODINFO("idx=%d, Theta=%f, Sigma=%f, x=%f, y=%f, z=%f", vertIdx, theta, sigma, x, y, z);
                 sigma += stepSizeRads;
                 ++vertIdx;

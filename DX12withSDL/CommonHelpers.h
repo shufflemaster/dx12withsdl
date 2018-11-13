@@ -30,9 +30,9 @@ namespace GAL
     {
         for (uint32_t i = 0; i < numVertices; i++)
         {
-            vertices[i].pos[0] += translation.x;
-            vertices[i].pos[1] += translation.y;
-            vertices[i].pos[2] += translation.z;
+            vertices[i].position[0] += translation.x;
+            vertices[i].position[1] += translation.y;
+            vertices[i].position[2] += translation.z;
         }
     }
 

@@ -20,6 +20,7 @@
 #include "ResourceLoaders/TriangleMeshLoader.h"
 #include "ResourceLoaders/SphereMeshLoader.h"
 #include "ResourceLoaders/PlaneMeshLoader.h"
+#include "ResourceLoaders/CubeMeshLoader.h"
 
 using namespace DirectX;
 
@@ -137,7 +138,7 @@ namespace GAL
             MeshComponent& meshComponent = registry.assign<MeshComponent>(sphereEntity);
 
             const float radius = 1.0f;
-            meshComponent.m_meshHandle = meshCache.AddResource<SphereMeshLoader>("assets/mesh/sphere", radius, 5.0f, 1, -1, 1);
+            meshComponent.m_meshHandle = meshCache.AddResource<SphereMeshLoader>("assets/mesh/sphere", radius, 5.0f, 1.0f, -1.0f, 1.0f);
             if (meshComponent.m_meshHandle < 0)
             {
                 ODERROR("Failed to create mesh for spehre");
@@ -168,6 +169,38 @@ namespace GAL
             //Add the transform component
             TransformComponent& tc = registry.assign<TransformComponent>(planeEntity);
             XMMATRIX identityMat = XMMatrixIdentity();
+            XMStoreFloat4x4A(&tc.m_matrix, identityMat);
+        }
+        //*************************************************
+
+        //*************************************************
+        //Create cube.
+        if (1)
+        {
+            auto cubeEntity = m_universe.CreteEntity();
+            MeshComponent& meshComponent = registry.assign<MeshComponent>(cubeEntity);
+
+            float width = 3.0f;
+            float height = 2.0f;
+            float depth = 5.0f;
+            XMFLOAT3 faceColors[] = { XMFLOAT3{1.0f, 0.0f, 0.0f},
+                                      XMFLOAT3{0.0f, 1.0f, 0.0f},
+                                      XMFLOAT3{0.0f, 0.0f, 1.0f},
+                                      XMFLOAT3{1.0f, 0.0f, 1.0f},
+                                      XMFLOAT3{1.0f, 1.0f, 1.0f},
+                                      XMFLOAT3{0.5f, 0.5f, 0.5f}, };
+            int numFaceColors = sizeof(faceColors) / sizeof(faceColors[0]);
+            meshComponent.m_meshHandle = meshCache.AddResource<CubeMeshLoader>("assets/mesh/cube", width, 3,
+                height, 2, depth, 5, faceColors, numFaceColors);
+            if (meshComponent.m_meshHandle < 0)
+            {
+                ODERROR("Failed to create mesh for cube");
+                return false;
+            }
+
+            //Add the transform component
+            TransformComponent& tc = registry.assign<TransformComponent>(cubeEntity);
+            XMMATRIX identityMat = XMMatrixTranslation(3.0f, height * 0.5f, 0.0f);
             XMStoreFloat4x4A(&tc.m_matrix, identityMat);
         }
         //*************************************************

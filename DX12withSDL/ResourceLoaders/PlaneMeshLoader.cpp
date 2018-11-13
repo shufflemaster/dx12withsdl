@@ -81,7 +81,7 @@ namespace GAL
             colBstart++;
         }
 
-        //Transform the vertices.
+        //Transform the vertices according to the desired plane normal.
         XMVECTOR defaultNormal = XMVectorSet(0, 0, -1, 0);
         XMVECTOR targetNormal = XMLoadFloat3(&planeNormal);
         targetNormal = XMVector3Normalize(targetNormal);
@@ -112,15 +112,7 @@ namespace GAL
             v = XMVector3Transform(v, rotMatrix);
             XMStoreFloat3((XMFLOAT3 *)&(retMesh->m_vertices[i].pos[0]), v);
         }
-
-        XMVECTOR quat0 = XMQuaternionRotationNormal(XMVectorSet(0, 0, 1, 0), 0);
-        XMMATRIX mat0 = XMMatrixRotationQuaternion(quat0);
-        XMVECTOR quat1 = XMQuaternionRotationNormal(XMVectorSet(1, 0, 0, 0), 3.14159f * 0.5f);
-        XMMATRIX mat1 = XMMatrixRotationQuaternion(quat1);
-        XMVECTOR fZ = XMVectorSet(0, 0, 1, 0);
-        fZ = XMVector3Transform(fZ, mat1);
         
-
         return retMesh;
     }
 };//namespace GAL

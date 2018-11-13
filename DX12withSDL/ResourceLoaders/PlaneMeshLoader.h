@@ -15,11 +15,6 @@ namespace GAL
     class PlaneMeshLoader : public ResourceLoader<PlaneMeshLoader, Mesh>
     {
     public:
-        enum class ePlaneNormal
-        {
-
-        };
-
         PlaneMeshLoader() = default;
 
         //WHAT YOU NEED TO KNOW.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include "VertexTypes.h"
 
 using namespace DirectX;
 
@@ -23,6 +24,16 @@ namespace GAL
     {
         XMMATRIX tmpMat = XMMatrixTranslation(randFloat(minX, maxX), randFloat(minY, maxY), randFloat(minZ, maxZ));
         XMStoreFloat4x4(&worldMatOut, tmpMat);
+    }
+
+    static inline void ApplyTranslationToVertices(XMFLOAT3 translation, P3F_C4F* vertices, uint32_t numVertices)
+    {
+        for (uint32_t i = 0; i < numVertices; i++)
+        {
+            vertices[i].pos[0] += translation.x;
+            vertices[i].pos[1] += translation.y;
+            vertices[i].pos[2] += translation.z;
+        }
     }
 
 };//namespace GAL

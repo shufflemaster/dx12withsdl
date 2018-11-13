@@ -159,6 +159,9 @@
     <ClInclude Include="CommonHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ResourceLoaders\PlaneMeshLoader.h">
+      <Filter>Source Files\ResourceLoaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -231,6 +234,9 @@
       <Filter>Source Files\D3D12Renderer</Filter>
     </ClCompile>
     <ClCompile Include="ResourceLoaders\SphereMeshLoader.cpp">
+      <Filter>Source Files\ResourceLoaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceLoaders\PlaneMeshLoader.cpp">
       <Filter>Source Files\ResourceLoaders</Filter>
     </ClCompile>
   </ItemGroup>

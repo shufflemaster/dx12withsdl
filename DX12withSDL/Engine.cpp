@@ -19,6 +19,7 @@
 #include "ResourceTypes/Mesh.h"
 #include "ResourceLoaders/TriangleMeshLoader.h"
 #include "ResourceLoaders/SphereMeshLoader.h"
+#include "ResourceLoaders/PlaneMeshLoader.h"
 
 using namespace DirectX;
 
@@ -128,21 +129,48 @@ namespace GAL
             ::GenerateRandomWorldMatrix(transformComponent.m_matrix, -5.0f, 5.0f, -5.0f, 5.0f, 5.0f, 10.0f);
         }
 #endif
-        //Create spehre
-        auto sphereEntity = m_universe.CreteEntity();
-        MeshComponent& meshComponent = registry.assign<MeshComponent>(sphereEntity);
-        
-        meshComponent.m_meshHandle = meshCache.AddResource<SphereMeshLoader>("assets/mesh/sphere", 1.0f, 5.0f);
-        if (meshComponent.m_meshHandle < 0)
+        //*************************************************
+        //Create sphere
+        if (1)
         {
-            ODERROR("Failed to create mesh for spehre");
-            return false;
-        }
+            auto sphereEntity = m_universe.CreteEntity();
+            MeshComponent& meshComponent = registry.assign<MeshComponent>(sphereEntity);
 
-        //Add the transform component
-        TransformComponent& tc = registry.assign<TransformComponent>(sphereEntity);
-        XMMATRIX identityMat = XMMatrixIdentity();
-        XMStoreFloat4x4A(&tc.m_matrix, identityMat);
+            const float radius = 1.0f;
+            meshComponent.m_meshHandle = meshCache.AddResource<SphereMeshLoader>("assets/mesh/sphere", radius, 5.0f, 1, -1, 1);
+            if (meshComponent.m_meshHandle < 0)
+            {
+                ODERROR("Failed to create mesh for spehre");
+                return false;
+            }
+
+            //Add the transform component
+            TransformComponent& tc = registry.assign<TransformComponent>(sphereEntity);
+            XMMATRIX identityMat = XMMatrixTranslation(0.0f, radius, 0.0f);
+            XMStoreFloat4x4A(&tc.m_matrix, identityMat);
+        }
+        //*************************************************
+
+        //*************************************************
+        //Create plane.
+        if (1) 
+        {
+            auto planeEntity = m_universe.CreteEntity();
+            MeshComponent& meshComponent = registry.assign<MeshComponent>(planeEntity);
+
+            meshComponent.m_meshHandle = meshCache.AddResource<PlaneMeshLoader>("assets/mesh/plane", 20.0f, 20, 20.0f, 20, XMFLOAT3{0, 1, 0});
+            if (meshComponent.m_meshHandle < 0)
+            {
+                ODERROR("Failed to create mesh for spehre");
+                return false;
+            }
+
+            //Add the transform component
+            TransformComponent& tc = registry.assign<TransformComponent>(planeEntity);
+            XMMATRIX identityMat = XMMatrixIdentity();
+            XMStoreFloat4x4A(&tc.m_matrix, identityMat);
+        }
+        //*************************************************
 
         //Create the camera entity
         auto camEntity = m_universe.CreteEntity();
@@ -151,7 +179,7 @@ namespace GAL
         transformComponent.SetRight(   XMFLOAT4A(1.0f, 0.0f,  0.0f, 0.0f));
         transformComponent.SetUp(      XMFLOAT4A(0.0f, 1.0f,  0.0f, 0.0f));
         transformComponent.SetForward( XMFLOAT4A(0.0f, 0.0f,  1.0f, 0.0f));
-        transformComponent.SetPosition(XMFLOAT4A(0.0f, 0.0f, -4.0f, 1.0f));
+        transformComponent.SetPosition(XMFLOAT4A(0.0f, 4.0f, -20.0f, 1.0f));
         CameraComponent& cameraComponent = registry.assign<CameraComponent>(camEntity);
         cameraComponent.m_fieldOfViewDegrees = 45.0f;
         cameraComponent.m_nearClipDistance = 0.1f;

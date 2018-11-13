@@ -10,6 +10,7 @@ namespace GAL
     {
         friend class TriangleMeshLoader;
         friend class SphereMeshLoader;
+        friend class PlaneMeshLoader;
 
     public:
         Mesh(const std::string& filename);

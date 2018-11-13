@@ -201,6 +201,7 @@
     <ClInclude Include="include\TimeCounter.h" />
     <ClInclude Include="include\Universe.h" />
     <ClInclude Include="include\VertexTypes.h" />
+    <ClInclude Include="ResourceLoaders\PlaneMeshLoader.h" />
     <ClInclude Include="ResourceLoaders\SphereMeshLoader.h" />
     <ClInclude Include="ResourceLoaders\TriangleMeshLoader.h" />
     <ClInclude Include="ResourceTypes\Mesh.h" />
@@ -230,6 +231,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="LogUtils.cpp" />
+    <ClCompile Include="ResourceLoaders\PlaneMeshLoader.cpp" />
     <ClCompile Include="ResourceLoaders\SphereMeshLoader.cpp" />
     <ClCompile Include="ResourceLoaders\TriangleMeshLoader.cpp" />
     <ClCompile Include="ResourceManager.cpp" />

@@ -9,8 +9,9 @@ namespace GAL
     public:
         Camera();
         ~Camera();
-
+        
+        XMFLOAT4X4A m_viewMatrix;
         XMFLOAT4X4A m_projMatrix;
-        XMFLOAT4X4A m_viewProjMatrix;
+        //XMFLOAT4X4A m_viewProjMatrix;
     };
 }; //namespace GAL

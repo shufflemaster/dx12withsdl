@@ -15,7 +15,8 @@ namespace GAL
     using RenderEntityId = Registry::entity_type;
 
     struct PerObjectConstantBufferData {
-        XMFLOAT4X4 wvpMatrix;
+        XMFLOAT4X4 worldViewProjMatrix;
+        XMFLOAT4X4 worldViewMatrix;
     };
 
     //FIXME! There's no reason for the Renderer to be an input listener
@@ -47,12 +48,6 @@ namespace GAL
             return XMMatrixPerspectiveFovLH(fieldOfViewDegrees*(3.14159f / 180.0f), (float)m_windowWidth / (float)m_windowHeight, nearClipDistance, farClipDistance);
         }
 
-        inline XMMATRIX MakeViewProjMatrix(XMMATRIX projMatrix, XMVECTOR position, XMVECTOR forward, XMVECTOR up) const
-        {
-            XMMATRIX viewMat = XMMatrixLookToLH(position, forward, up);
-            return viewMat * projMatrix;
-        }
-
         //Returns the instance that owns the camera.
         RenderEntityId AddCamera(float fieldOfViewDegrees, float nearClipDistance, float farClipDistance,
             XMVECTOR position, XMVECTOR forward, XMVECTOR up);
@@ -74,7 +69,7 @@ namespace GAL
         void PostRender();
         void Swap();
 
-        void CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix);
+        void CalculatePerObjectDataForShader(PerObjectConstantBufferData& cbDataOut, const XMFLOAT4X4& objWorldMatrix);
 
         static const UINT kBackBufferCount = 3; //define number of backbuffers to use
 
@@ -122,6 +117,7 @@ namespace GAL
         D3D12_VIEWPORT m_viewport;
         D3D12_RECT m_rectScissor;
 
+        XMMATRIX m_cameraViewMat; //Contains view matrix;
         XMMATRIX m_cameraProjMat; //Contains proj matrix;
         XMMATRIX m_cameraViewProjMat; //Contains View and Projection in one matrix.
         RenderEntityId m_activeCameraEntity;

@@ -69,9 +69,6 @@
     <ClInclude Include="ResourceLoaders\TriangleMeshLoader.h">
       <Filter>Source Files\ResourceLoaders</Filter>
     </ClInclude>
-    <ClInclude Include="include\ConstantBufferPool.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\d3dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -164,6 +161,9 @@
     </ClInclude>
     <ClInclude Include="ResourceLoaders\CubeMeshLoader.h">
       <Filter>Source Files\ResourceLoaders</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer\ConstantBufferPool.hpp">
+      <Filter>Source Files\D3D12Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

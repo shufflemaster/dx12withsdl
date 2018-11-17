@@ -159,7 +159,7 @@ namespace GAL
             auto planeEntity = m_universe.CreteEntity();
             MeshComponent& meshComponent = registry.assign<MeshComponent>(planeEntity);
 
-            meshComponent.m_meshHandle = meshCache.AddResource<PlaneMeshLoader>("assets/mesh/plane", 20.0f, 20, 20.0f, 20, XMFLOAT3{0, 1, 0});
+            meshComponent.m_meshHandle = meshCache.AddResource<PlaneMeshLoader>("assets/mesh/plane", 20.0f, 40, 20.0f, 40, XMFLOAT3{0, 1, 0});
             if (meshComponent.m_meshHandle < 0)
             {
                 ODERROR("Failed to create mesh for spehre");
@@ -190,8 +190,8 @@ namespace GAL
                                       XMFLOAT3{1.0f, 1.0f, 1.0f},
                                       XMFLOAT3{0.5f, 0.5f, 0.5f}, };
             int numFaceColors = sizeof(faceColors) / sizeof(faceColors[0]);
-            meshComponent.m_meshHandle = meshCache.AddResource<CubeMeshLoader>("assets/mesh/cube", width, 3,
-                height, 2, depth, 5, faceColors, numFaceColors);
+            meshComponent.m_meshHandle = meshCache.AddResource<CubeMeshLoader>("assets/mesh/cube", width, 30,
+                height, 20, depth, 50, faceColors, numFaceColors);
             if (meshComponent.m_meshHandle < 0)
             {
                 ODERROR("Failed to create mesh for cube");
@@ -246,7 +246,7 @@ namespace GAL
         //MouseDeltaY + MouseMiddleButton = MoveUp
         //MouseDeltaY + MouseRightButton = MovePitch
         evtId = inputComponent.AddEventNameHelper("MouseDeltaY");
-        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_Y, -1.0f, 0.001f);
+        inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::MOUSE_DELTA_Y, 1.0f, 0.001f);
         evtId = inputComponent.AddEventNameHelper("RotatePitch");
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_UP, 0.02f, 0.0f);
         inputComponent.AddEventInputItemHelper(evtId, InputComponent::eInputName::KEYBOARD_DOWN, -0.02f, 0.0f);

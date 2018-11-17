@@ -300,7 +300,7 @@ namespace GAL
        D3D12_ROOT_PARAMETER  rootParameters[1]; // only one parameter right now
        rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
        rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-       rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+       rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // both vertex and pixel shader access these parameters.
 
        ComPtr<ID3DBlob> rootBlob;
        ComPtr<ID3DBlob> errorBlob;
@@ -429,11 +429,11 @@ namespace GAL
 
    void D3D12Renderer::InitDefaultCameraMatrices()
    {
-       m_cameraProjMat = MakeProjMatrix(45.0f, 0.1f, 1000.0f);
-       m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat,
-           XMVectorSet(0.0f, 0.0f, -4.0f, 1.0f),
+       m_cameraViewMat = XMMatrixLookToLH(XMVectorSet(0.0f, 0.0f, -4.0f, 1.0f),
            XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f),
            XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+       m_cameraProjMat = MakeProjMatrix(45.0f, 0.1f, 1000.0f);
+       m_cameraViewProjMat = XMMatrixMultiply(m_cameraViewMat, m_cameraProjMat);
    }
 
    RenderEntityId D3D12Renderer::AddCamera(float fieldOfViewDegrees, float nearClipDistance, float farClipDistance,
@@ -443,11 +443,12 @@ namespace GAL
        Camera& camData = m_registry.assign<Camera>(camEntity);
 
        //The latest added camera becomes the current camera
+       m_cameraViewMat = XMMatrixLookToLH(position, forward, up);
        m_cameraProjMat = MakeProjMatrix(fieldOfViewDegrees, nearClipDistance, farClipDistance);
-       m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat, position, forward, up);
+       m_cameraViewProjMat = XMMatrixMultiply(m_cameraViewMat, m_cameraProjMat);
 
+       XMStoreFloat4x4A(&camData.m_viewMatrix, m_cameraViewMat);
        XMStoreFloat4x4A(&camData.m_projMatrix, m_cameraProjMat);
-       XMStoreFloat4x4A(&camData.m_viewProjMatrix, m_cameraViewProjMat);
        m_activeCameraEntity = camEntity;
 
        return camEntity;
@@ -461,8 +462,9 @@ namespace GAL
            return; //All is good.
 
        Camera& camData = m_registry.get<Camera>(camId);
+       m_cameraViewMat = XMLoadFloat4x4A(&camData.m_viewMatrix);
        m_cameraProjMat = XMLoadFloat4x4A(&camData.m_projMatrix);
-       m_cameraViewProjMat = XMLoadFloat4x4A(&camData.m_viewProjMatrix);
+       m_cameraViewProjMat = XMMatrixMultiply(m_cameraViewMat, m_cameraViewProjMat);
 
        m_activeCameraEntity = camId;
    }
@@ -471,22 +473,23 @@ namespace GAL
    {
        if (camId == NullEntity)
        {
-           m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat, position, forward, up);
+           m_cameraViewMat = XMMatrixLookToLH(position, forward, up);
+           m_cameraViewProjMat = XMMatrixMultiply(m_cameraViewMat, m_cameraProjMat);
            return;
        }
 
        if (camId == m_activeCameraEntity)
        {
-           m_cameraViewProjMat = MakeViewProjMatrix(m_cameraProjMat, position, forward, up);
+           m_cameraViewMat = XMMatrixLookToLH(position, forward, up);
+           m_cameraViewProjMat = XMMatrixMultiply(m_cameraViewMat, m_cameraProjMat);
            Camera& camData = m_registry.get<Camera>(camId);
-           XMStoreFloat4x4A(&camData.m_viewProjMatrix, m_cameraViewProjMat);
+           XMStoreFloat4x4A(&camData.m_viewMatrix, m_cameraViewMat);
            return;
        }
 
        Camera& camData = m_registry.get<Camera>(camId);
-       XMMATRIX camProjMat = XMLoadFloat4x4A(&camData.m_projMatrix);
-       XMMATRIX camViewProjMat = MakeViewProjMatrix(camProjMat, position, forward, up);
-       XMStoreFloat4x4A(&camData.m_viewProjMatrix, camViewProjMat);
+       XMMATRIX camViewMat = XMMatrixLookToLH(position, forward, up);
+       XMStoreFloat4x4A(&camData.m_viewMatrix, camViewMat);
    }
 
    void D3D12Renderer::PreRender()
@@ -552,13 +555,15 @@ namespace GAL
 
    } //RendererD3D12::FinalizeRender()
 
-   void D3D12Renderer::CalculateWVPMatrixForShader(XMFLOAT4X4& wvpMatrixOut, const XMFLOAT4X4& objWorldMatrix)
+   void D3D12Renderer::CalculatePerObjectDataForShader(PerObjectConstantBufferData& cbDataOut, const XMFLOAT4X4& objWorldMatrix)
    {
        XMMATRIX objWorldMat = XMLoadFloat4x4(&objWorldMatrix);
        XMMATRIX wvpMat = objWorldMat * m_cameraViewProjMat;
+       XMMATRIX wvMat = objWorldMat * m_cameraViewMat;
 
        //Remember that HLSL is column major, so we need to transpose.
-       XMStoreFloat4x4(&wvpMatrixOut, XMMatrixTranspose(wvpMat));
+       XMStoreFloat4x4(&cbDataOut.worldViewProjMatrix, XMMatrixTranspose(wvpMat));
+       XMStoreFloat4x4(&cbDataOut.worldViewMatrix, XMMatrixTranspose(wvMat));
    }
 
    ///////////////////////////////////////////////////////////////////////////////
@@ -608,7 +613,7 @@ namespace GAL
         {
             //Update
             PerObjectConstantBufferData cbData;
-            CalculateWVPMatrixForShader(cbData.wvpMatrix, renderNode.m_worldMatrix);
+            CalculatePerObjectDataForShader(cbData, renderNode.m_worldMatrix);
 
             D3D12_GPU_VIRTUAL_ADDRESS cbvGpuAddress = m_constantBufferPool.UploadData(&cbData, m_currentBackBuffer, renderObjectIdx);
             commandList->SetGraphicsRootConstantBufferView(0, cbvGpuAddress);

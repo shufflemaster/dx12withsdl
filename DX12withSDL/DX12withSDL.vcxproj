@@ -106,7 +106,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;$(MSBuildProjectDirectory)\d3d12renderer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;$(MSBuildProjectDirectory)\d3d12renderer;$(MSBuildProjectDirectory)\d3d12renderer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -152,7 +152,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;$(MSBuildProjectDirectory)\d3d12renderer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\um;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.17134.0\shared;$(MSBuildProjectDirectory)\SDL2-2.0.8\include;$(MSBuildProjectDirectory)\entt_src;$(MSBuildProjectDirectory)\include;$(MSBuildProjectDirectory)\d3d12renderer;$(MSBuildProjectDirectory)\d3d12renderer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <ExceptionHandling>Sync</ExceptionHandling>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -178,12 +178,12 @@
     <ClInclude Include="Components\RendererIdComponent.h" />
     <ClInclude Include="Components\TransformComponent.h" />
     <ClInclude Include="D3D12Renderer\Camera.h" />
+    <ClInclude Include="D3D12Renderer\ConstantBufferPool.hpp" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\D3D12Renderer.h" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceLoaders\GpuMeshLoader.h" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceManager.h" />
     <ClInclude Include="D3D12Renderer\include\d3d12renderer\GpuResourceTypes\GpuMesh.h" />
     <ClInclude Include="D3D12Renderer\RenderNode.h" />
-    <ClInclude Include="include\ConstantBufferPool.hpp" />
     <ClInclude Include="include\d3dx12.h" />
     <ClInclude Include="include\ecs_typedefs.h" />
     <ClInclude Include="include\Engine.h" />
